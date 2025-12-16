@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+:root {
+  /* Core Colors */
+  --background: #090909;
+  --foreground: #ffffff;
+
+  /* Text */
+  --text-muted: #f4f4f4;
+  --text-secondary: #727272;
+
+  /* Brand / Interactive */
+  --primary: #7628db;
+  --primary-alt: #5c6dff;
+  --accent: #faf16c;
+  --destructive: #d3745e;
+  --gold: #ddc984;
+
+  /* UI Elements */
+  --input-bg: #171717;
+  --input-border: #3c3c3c;
+  --glass: rgba(184, 183, 183, 0.2);
+  --card-bg: #0B0B0B;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-text-muted: var(--text-muted);
+  --color-text-secondary: var(--text-secondary);
+  --color-primary: var(--primary);
+  --color-primary-alt: var(--primary-alt);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-gold: var(--gold);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-glass: var(--glass);
+  --color-card-bg: var(--card-bg);
+
+  --font-mulish: var(--font-mulish);
+  --font-preahvihear: var(--font-preahvihear);
+  --font-dm-sans: var(--font-dm-sans);
+  --font-power: var(--font-power);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
