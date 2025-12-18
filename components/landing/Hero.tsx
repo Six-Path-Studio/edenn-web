@@ -98,15 +98,13 @@ export default function Hero() {
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
             className="w-full max-w-md lg:max-w-2xl mt-4 lg:mt-6 relative group px-4 sm:px-0"
           >
-            <div className="absolute inset-y-0 left-6 sm:left-6 flex items-center pointer-events-none">
-              <span className="text-text-secondary text-sm lg:text-base">Search</span>
-            </div>
             <input 
               type="text" 
-              className="w-full bg-[#121212] border border-input-border rounded-xl lg:rounded-2xl py-3 lg:py-4 px-6 text-white placeholder-transparent focus:border-white/20 transition-colors outline-none text-base lg:text-lg"
+              placeholder="Search"
+              className="w-full bg-[#121212] border border-input-border rounded-xl lg:rounded-2xl py-3 lg:py-4 px-6 text-white placeholder:text-text-secondary focus:border-white/20 transition-colors outline-none text-base lg:text-lg"
             />
-            <div className="absolute inset-y-0 right-6 sm:right-6 flex items-center pointer-events-none">
-              <Search className="w-4 h-4 lg:w-5 lg:h-5 text-text-secondary" />
+            <div className="absolute inset-y-0 right-6 sm:right-6 lg:right-6 flex items-center pointer-events-none group-focus-within:text-white">
+              <Search className="w-4 h-4 lg:w-5 lg:h-5 text-text-secondary transition-colors group-focus-within:text-white" />
             </div>
           </motion.div>
         </div>
