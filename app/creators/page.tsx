@@ -8,11 +8,12 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { CreatorSidebarCard } from "@/components/directory/CreatorSidebarCard";
 
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import Link from "next/link"; // Added Link import
+
 export default function CreatorsPage() {
-  const creators = Array(12).fill({
-    name: "Hammer Games",
-    tags: ["#Artist", "#Gamedeveloper"],
-  });
+  const creators = useQuery(api.users.getCreators) || [];
 
   const container = {
     hidden: { opacity: 0 },
@@ -121,19 +122,19 @@ export default function CreatorsPage() {
                   className="flex flex-col gap-3"
                 >
                     {creators.map((c, i) => (
+                      <Link href={`/creators/${c._id}`} key={i} className="block w-full">
                       <motion.div 
-                        key={i} 
                         variants={item}
                         whileHover={{ x: 10, backgroundColor: "rgba(255,255,255,0.03)", transition: { duration: 0.2 } }}
                         className="bg-black/20 rounded-[28px] p-4 flex items-center justify-between border border-white/5 hover:border-white/20 transition-all group cursor-pointer"
                       >
                          <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 border-2 border-white/5">
-                               <Image src="/images/avatar.png" alt="Logo" width={40} height={40} className="object-cover" />
+                            <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 border-2 border-white/5 bg-black">
+                               <Image src={c.avatar || "/images/avatar.png"} alt="Logo" width={56} height={56} className="object-cover w-full h-full" />
                             </div>
                             <div className="flex flex-col gap-0.5">
-                               <h3 className="text-white font-black text-lg tracking-tight group-hover:text-[#7628DB] transition-colors">Hammer Games</h3>
-                               <span className="text-[#9CA3AF] text-sm font-medium italic opacity-60">#Artist #Gamedeveloper</span>
+                               <h3 className="text-white font-black text-lg tracking-tight group-hover:text-[#7628DB] transition-colors">{c.name}</h3>
+                               <span className="text-[#9CA3AF] text-sm font-medium italic opacity-60">@{c.name?.toLowerCase().replace(/\s+/g, '')}</span>
                             </div>
                          </div>
                          
@@ -149,6 +150,7 @@ export default function CreatorsPage() {
                            </div>
                          </motion.button>
                       </motion.div>
+                      </Link>
                     ))}
                 </motion.div>
                </div>

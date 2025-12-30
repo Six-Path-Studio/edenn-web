@@ -1,82 +1,102 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
-import { Folder } from "lucide-react";
+import { Folder, Upload, Edit2, Triangle } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
-import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useAuth } from "@/components/providers/AuthProvider";
 import "swiper/css";
 import "swiper/css/pagination";
 
-// --- Types ---
-interface PortfolioItem {
-  id: string;
-  image: string;
-  title: string;
-  handle: string;
-  avatar: string;
-}
-
-// --- Mock Data ---
-const portfolioItems: PortfolioItem[] = Array(6).fill({
-  id: "1",
-  image: "/images/onboarding/sideimageman.jpg", // leveraging existing image
-  title: "Unbroken",
-  handle: "@Raven Illusion Studio",
-  avatar: "/images/avatar.png",
-});
-
-const socialLinks = [
-  { platform: "Tiktok", handle: "Manjalee" },
-  { platform: "Youtube", handle: "Manjalee" },
-  { platform: "X (twitter)", handle: "Manjalee" },
-  { platform: "Instagram", handle: "Manjalee" },
-  { platform: "Twitch", handle: "Manjalee" },
-];
-
-interface UserProfile {
-  userType: "studio" | "creator" | null;
-  studioName?: string;
-  username: string;
-  country: string;
-  career: string;
-  about: string;
-  socials: Record<string, string>;
-}
-
 export default function ProfileContent() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { user } = useAuth();
+  const upvoteGame = useMutation(api.games.upvoteGame);
+  
+  // Fetch user data from Convex
+  const dbUser = useQuery(
+    api.users.getUserByEmail,
+    user?.email ? { email: user.email } : "skip"
+  );
 
-  useEffect(() => {
-    const saved = localStorage.getItem("edenn_user_profile");
-    if (saved) {
-      setProfile(JSON.parse(saved));
+  // Fetch viewing user's data for upvoting (the person logged in)
+  const currentUser = useQuery(
+    api.users.getUserByEmail,
+    user?.email ? { email: user.email } : "skip"
+  );
+
+  // Fetch user's games from Convex
+  const userGames = useQuery(
+    api.games.getGamesByCreator,
+    dbUser?._id ? { creatorId: dbUser._id } : "skip"
+  );
+
+  const handleUpvote = async (gameId: any) => {
+    if (!currentUser) return;
+    try {
+      await upvoteGame({ gameId, userId: currentUser._id });
+    } catch (error) {
+      console.error("Failed to upvote:", error);
     }
-  }, []);
+  };
 
-  const isCreator = profile?.userType === "creator";
+  // Loading state
+  if (!dbUser) {
+    return (
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8">
+          <div className="bg-[#111111] rounded-[32px] p-8 animate-pulse h-96" />
+        </div>
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="bg-[#111111] rounded-[32px] p-6 animate-pulse h-64" />
+          <div className="bg-[#111111] rounded-[32px] p-6 animate-pulse h-48" />
+        </div>
+      </div>
+    );
+  }
+
+  const isCreator = dbUser.role === "creator";
+  const isStudio = dbUser.role === "studio";
   const displayTitle = isCreator ? "Personal Portfolio" : "Studio Portfolio";
-  const displayAboutLabel = isCreator ? "About Creator" : "About Creator";
+  const displayAboutLabel = isCreator ? "About Creator" : "About Studio";
   const displayDescTitle = isCreator ? "Personal Details:" : "About studio:";
-  const displayDesc = profile?.about || "Lorem ipsum dolor sit amet consectetur. Urna fauc ibus tempus ultrices a cliquam in donec lacus velit.";
-  const displayLocation = profile?.country || "Lagos, Nigeria";
+  const displayDesc = dbUser.bio || "No description yet. Complete your profile to add a bio.";
+  const displayLocation = dbUser.location || "Location not set";
+  const displayName = dbUser.name || "User";
   
-  // Safely map socials, ensuring we have array even if empty object
-  const socialEntries = Object.entries(profile?.socials || {});
-  const hasSocials = socialEntries.length > 0;
+  // Helper to validate image URLs
+  const getValidImageUrl = (url: string | undefined, fallback: string): string => {
+    if (!url || url.trim() === "" || url === "undefined" || url === "null") return fallback;
+    if (url.startsWith("/") || url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    return fallback;
+  };
   
-  // Default mock links if none
-  const defaultSocials = [
-    { platform: "Tiktok", handle: "Manjalee" },
-    { platform: "Youtube", handle: "Manjalee" },
-    { platform: "X (twitter)", handle: "Manjalee" },
-    { platform: "Instagram", handle: "Manjalee" },
-    { platform: "Twitch", handle: "Manjalee" },
+  const avatarUrl = getValidImageUrl(dbUser.avatar || user?.avatar, "/images/avatar.png");
+  const coverImageUrl = getValidImageUrl(dbUser.coverImage, "/images/onboarding/sideimageman.jpg");
+  
+  // Map socials from Convex schema
+  const socialMapping: { key: keyof NonNullable<typeof dbUser.socials>; label: string }[] = [
+    { key: "tiktok", label: "TikTok" },
+    { key: "youtube", label: "YouTube" },
+    { key: "twitter", label: "X (Twitter)" },
+    { key: "instagram", label: "Instagram" },
+    { key: "twitch", label: "Twitch" },
   ];
+  
+  const displaySocials = socialMapping
+    .filter(s => dbUser.socials?.[s.key])
+    .map(s => ({
+      platform: s.label,
+      handle: dbUser.socials?.[s.key] || "",
+      url: dbUser.socials?.[s.key] || "#"
+    }));
 
-  const displaySocials = hasSocials 
-    ? socialEntries.map(([k, v]) => ({ platform: k, handle: v || "Link" }))
-    : defaultSocials;
+  const hasSocials = displaySocials.length > 0;
+  const hasGames = userGames && userGames.length > 0;
 
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24 grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -110,9 +130,8 @@ export default function ProfileContent() {
               {[1, 2, 3].map((_, index) => (
                 <SwiperSlide key={index}>
                   <div className="relative w-full h-full bg-[#1A1A1A]">
-                    {/* Placeholder image for featured content */}
                      <Image 
-                        src="/images/onboarding/sideimageman.jpg" 
+                        src={coverImageUrl} 
                         alt="Featured" 
                         fill 
                         className="object-cover opacity-80"
@@ -135,45 +154,86 @@ export default function ProfileContent() {
           <div className="text-center mb-8">
             <h2 className="text-4xl font-normal text-white mb-3">{displayTitle}</h2>
             <p className="text-white/60 text-sm">
-              Skip the hassle of building from scratch. Get a fully functional AI agent asap
+              {isCreator ? "Showcase your creative work and projects" : "Showcase your studio's games and projects"}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             {portfolioItems.map((item, idx) => (
-                <div key={idx} className="bg-[#111111] rounded-[24px] p-3 flex flex-col gap-3 group">
-                   {/* Card Image */}
-                   <div className="relative aspect-4/3 rounded-[20px] overflow-hidden">
-                      <Image 
-                        src={item.image} 
-                        alt={item.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-2 right-2 bg-white/10 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-white font-medium">
-                        WIP
-                      </div>
-                   </div>
+          {hasGames ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               {userGames.map((game) => (
+                  <div key={game._id} className="bg-[#111111] rounded-[24px] p-3 flex flex-col gap-3 group">
+                     {/* Card Image */}
+                     <Link href={`/games/${game._id}`} className="relative aspect-4/3 rounded-[20px] overflow-hidden">
+                        <Image 
+                          src={getValidImageUrl(game.coverImage, "/images/onboarding/sideimageman.jpg")} 
+                          alt={game.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-3 left-3 flex flex-col items-center gap-1">
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleUpvote(game._id);
+                            }}
+                            className={`w-10 h-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-md border transition-all ${
+                              currentUser && game.upvotedBy.includes(currentUser._id)
+                                ? "bg-[#8b5cf6] border-[#8b5cf6] text-white"
+                                : "bg-black/40 border-white/10 text-white hover:bg-white/10"
+                            }`}
+                          >
+                            <Triangle className={`w-3 h-3 fill-current mb-0.5 ${currentUser && game.upvotedBy.includes(currentUser._id) ? "rotate-0" : "rotate-0"}`} />
+                            <span className="text-[10px] font-bold">{game.upvotes}</span>
+                          </button>
+                        </div>
+                     </Link>
 
-                   {/* Card Footer */}
-                   <div className="flex items-center justify-between px-1">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 relative">
-                           <Image src={item.avatar} alt="Avatar" fill className="object-cover" />
+                     {/* Card Footer */}
+                     <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 relative">
+                             <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
+                          </div>
+                          <div className="flex flex-col">
+                             <span className="text-white text-xs font-bold">{game.title}</span>
+                             <span className="text-white/40 text-[10px]">@{displayName}</span>
+                          </div>
                         </div>
-                        <div className="flex flex-col">
-                           <span className="text-white text-xs font-bold">{item.title}</span>
-                           <span className="text-white/40 text-[10px]">{item.handle}</span>
+                        
+                        <div className="flex gap-2">
+                           <Link href={`/games/${game._id}`} className="h-7 px-3 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white text-[10px] font-bold rounded-full transition-colors flex items-center justify-center">
+                             View
+                           </Link>
+                           {currentUser && game.creatorId === currentUser._id && (
+                             <Link href={`/edit-game/${game._id}`} className="h-7 px-3 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-full transition-colors flex items-center justify-center">
+                               Edit
+                             </Link>
+                           )}
                         </div>
-                      </div>
-                      
-                      <button className="h-7 px-3 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white text-[10px] font-bold rounded-full transition-colors">
-                        Link
-                      </button>
-                   </div>
-                </div>
-             ))}
-          </div>
+                     </div>
+                  </div>
+               ))}
+            </div>
+          ) : (
+            <div className="bg-[#111111] rounded-[32px] p-20 flex flex-col items-center justify-center gap-6 border-2 border-dashed border-white/5">
+              <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
+                <Upload className="w-10 h-10 text-white/20" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-white text-xl font-medium mb-2">No games yet</h3>
+                <p className="text-white/40 text-sm max-w-xs mx-auto mb-8">
+                  Your portfolio is currently empty. Start by uploading your first game to showcase it here.
+                </p>
+                <Link 
+                  href="/upload-game"
+                  className="bg-[#7628db] hover:bg-[#8b3eff] text-white px-10 py-4 rounded-full font-bold transition-all shadow-[0_4px_20px_rgba(118,40,219,0.3)] inline-flex items-center gap-2"
+                >
+                  <Upload size={18} />
+                  Upload Game
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
@@ -183,9 +243,14 @@ export default function ProfileContent() {
         
         {/* About Creator Card */}
         <div className="bg-[#111111] rounded-[32px] p-6 flex flex-col gap-6">
-           <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+           <div className="flex items-center gap-2 border-b border-white/5 pb-4 mb-2">
               <Folder className="w-5 h-5 text-white/80 fill-white/10" />
-              <span className="text-white font-medium">{displayAboutLabel}</span>
+              <div className="flex-1 flex justify-between items-center">
+                <span className="text-white font-medium">{displayAboutLabel}</span>
+                <Link href="/settings" className="text-white/20 hover:text-[#7628db] transition-colors">
+                  <Edit2 size={14} />
+                </Link>
+              </div>
            </div>
 
            <div className="flex flex-col gap-1">
@@ -203,20 +268,16 @@ export default function ProfileContent() {
            {isCreator && (
              <>
                <div className="flex items-center justify-between">
-                  <span className="text-white/60 text-sm">Languages:</span>
-                  <span className="text-white/40 text-sm text-right">English, French.</span>
-               </div>
-               <div className="flex items-center justify-between">
-                  <span className="text-white/60 text-sm">Gender:</span>
-                  <span className="text-white/40 text-sm text-right">Male</span>
+                  <span className="text-white/60 text-sm">Role:</span>
+                  <span className="text-white/40 text-sm text-right capitalize">{dbUser.role}</span>
                </div>
              </>
            )}
 
-           {!isCreator && (
+           {isStudio && (
              <div className="flex items-center justify-between">
-                <span className="text-white/60 text-sm">Website:</span>
-                <a href="#" className="text-[#Eab308] text-sm hover:underline">www.dirtymonkey.com</a>
+                <span className="text-white/60 text-sm">Type:</span>
+                <span className="text-white/40 text-sm text-right">Game Studio</span>
              </div>
            )}
         </div>
@@ -228,14 +289,16 @@ export default function ProfileContent() {
               <Folder className="w-5 h-5 text-white/80 fill-white/10" />
               <div className="flex-1 flex justify-between items-center">
                 <span className="text-white font-medium">Job</span>
-                <span className="text-white/20 text-xs text-right cursor-pointer hover:text-white">edit</span>
+                <Link href="/settings" className="text-white/20 hover:text-[#7628db] transition-colors">
+                  <Edit2 size={14} />
+                </Link>
               </div>
             </div>
 
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
                <span className="text-white text-sm">Resumé / CV</span>
                <button className="bg-[#2a2a2a] hover:bg-[#333] text-[#4ade80] text-xs px-4 py-1.5 rounded-full transition-colors">
-                 Manjalee
+                 {displayName}
                </button>
             </div>
 
@@ -252,20 +315,32 @@ export default function ProfileContent() {
         <div className="bg-[#111111] rounded-[32px] p-6 flex flex-col gap-4">
            <div className="flex items-center gap-2 border-b border-white/5 pb-4 mb-2">
               <Folder className="w-5 h-5 text-white/80 fill-white/10" />
-              <span className="text-white font-medium">Social Links</span>
+              <div className="flex-1 flex justify-between items-center">
+                <span className="text-white font-medium">Social Links</span>
+                <Link href="/settings" className="text-white/20 hover:text-[#7628db] transition-colors">
+                  <Edit2 size={14} />
+                </Link>
+              </div>
            </div>
 
            <div className="flex flex-col gap-4">
-              {displaySocials.map((social) => (
-                 <div key={social.platform} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
-                    <span className="text-white text-sm capitalize">{social.platform}
-                      {social.platform.toLowerCase().includes('x') ? ':' : social.platform.endsWith(':') ? '' : ':'}
-                    </span>
-                    <button className="bg-[#2a2a2a] hover:bg-[#333] text-[#4ade80] text-xs px-4 py-1.5 rounded-full transition-colors">
-                      {social.handle}
-                    </button>
-                 </div>
-              ))}
+              {hasSocials ? (
+                displaySocials.map((social) => (
+                   <div key={social.platform} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                      <span className="text-white text-sm">{social.platform}:</span>
+                      <a 
+                        href={social.url.startsWith('http') ? social.url : `https://${social.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#2a2a2a] hover:bg-[#333] text-[#4ade80] text-xs px-4 py-1.5 rounded-full transition-colors"
+                      >
+                        {social.handle.replace(/https?:\/\/(www\.)?/, '').split('/')[0] || social.handle}
+                      </a>
+                   </div>
+                ))
+              ) : (
+                <p className="text-white/40 text-sm">No social links added yet.</p>
+              )}
            </div>
         </div>
 

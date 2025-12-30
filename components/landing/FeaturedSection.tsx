@@ -2,14 +2,21 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import Container from "@/components/ui/Container";
-import { Plus, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight, Check } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useAuth } from "@/components/providers/AuthProvider";
+
 interface FeaturedItemProps {
+  id: string;
+  studioId?: string;
   title: string;
   studio: string;
   imageSrc: string;
@@ -23,6 +30,8 @@ interface FeaturedItemProps {
 }
 
 interface StudioItemProps {
+  id: string;
+  type: "studio" | "creator";
   name: string;
   handle: string;
   logoSrc: string;
@@ -46,108 +55,151 @@ interface ArticleItemProps {
   };
 }
 
-const FeaturedItem = ({ title, studio, imageSrc, avatarSrc, description, stats }: FeaturedItemProps) => {
+// Helper Component for Follow Button
+// Helper Component for Follow Button
+const FollowButton = ({ targetId }: { targetId?: string }) => {
+  const { user, isAuthenticated } = useAuth();
+  const toggleFollow = useMutation(api.users.toggleFollow);
+  
+  // Conditionally fetch isFollowing only if we have user and targetId
+  const isFollowing = useQuery(api.users.isFollowing, (user && targetId) ? { followerId: user.id as any, followingId: targetId as any } : "skip");
+
+  const handleToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated || !user) {
+        alert("Please login to follow.");
+        return;
+    }
+    if (!targetId) return;
+    
+    try {
+        await toggleFollow({ followerId: user.id as any, followingId: targetId as any });
+    } catch (err) {
+        console.error("Follow error:", err);
+    }
+  };
+
+  if (!targetId) return null;
+
   return (
-    <motion.div 
-      variants={{
-        hidden: { opacity: 0, y: 50 },
-        visible: { opacity: 1, y: 0 }
-      }}
-      className="flex flex-col gap-3"
+    <button 
+      onClick={handleToggle}
+      className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all z-20 relative ${isFollowing ? 'bg-primary border-primary text-white' : 'border-[#7628DB] text-[#7628DB] hover:bg-[#7628DB] hover:text-white'}`}
     >
-      {/* Game Card */}
-      <div className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-primary/50 transition-colors duration-300">
-        <div className="flex-1 w-full relative rounded-[20px] overflow-hidden">
-          <Image 
-            src={imageSrc} 
-            alt={title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        </div>
-        <div className="h-[57px] px-2 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full relative overflow-hidden shrink-0 border border-[#262626]">
-               <Image src={avatarSrc} alt={studio} fill className="object-cover" />
-            </div>
-        <div className="flex flex-col justify-center">
-              {/* Title - Mulish, 900, 17px */}
-              <h3 className="text-white font-mulish font-black text-[17px] leading-none mb-1">{title}</h3>
-              <span className="text-[#727272] text-[11px] font-medium leading-none">@{studio}</span>
-            </div>
-          </div>
-          <button className="w-10 h-10 rounded-full border border-[#7628DB] text-[#7628DB] flex items-center justify-center hover:bg-[#7628DB] hover:text-white transition-all">
-            <Plus className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Description Card */}
-      <div className="rounded-[20px] border-[1.5px] border-[#262626] bg-[#0B0B0B] py-[26px] px-[22px] flex flex-col gap-4">
-        <span className="self-start h-[43px] flex items-center bg-[#1A1A1A] text-[#9CA3AF] text-xs px-4 rounded-[35px] border border-[#262626]">
-          Description
-        </span>
-        <p className="font-dm-sans font-normal text-[#9CA3AF] text-[16px] leading-[20px] tracking-[-0.01em]">
-          {description}
-        </p>
-      </div>
-
-      {/* Stats Row - Separate Container */}
-      <div className="rounded-[20px] border border-[#262626] bg-[#0B0B0B] py-4 px-5 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
-          <Image src="/images/icon-post.png.svg" alt="Posts" width={18} height={18} />
-          <span>{stats.posts} posts</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
-          <Image src="/images/icon-review.png.svg" alt="Reviews" width={18} height={18} />
-          <span>{stats.reviews} reviews</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm bg-[#1A1A1A] border border-[#262626] px-4 py-2 rounded-full">
-          <Image src="/images/SVG.svg" alt="Upvotes" width={14} height={14} />
-          <span className="text-[#9CA3AF]">{stats.upvotes}</span>
-        </div>
-      </div>
-    </motion.div>
+      {isFollowing ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+    </button>
   );
 };
 
-const StudioItem = ({ name, handle, logoSrc, avatarSrc, description, stats }: StudioItemProps) => {
+const FeaturedItem = ({ id, studioId, title, studio, imageSrc, avatarSrc, description, stats }: FeaturedItemProps) => {
   return (
-    <motion.div 
-      variants={{
-        hidden: { opacity: 0, y: 50 },
-        visible: { opacity: 1, y: 0 }
-      }}
-      className="flex flex-col gap-3"
-    >
-      {/* Studio Card with Logo */}
-      <div className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-primary/50 transition-colors duration-300">
-        <div className="flex-1 w-full relative rounded-[20px] overflow-hidden bg-white flex items-center justify-center">
-          <Image 
-            src={logoSrc} 
-            alt={name}
-            width={200}
-            height={120}
-            className="object-contain transition-transform duration-500 group-hover:scale-105"
-          />
-        </div>
-        <div className="h-[57px] px-2 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full relative overflow-hidden shrink-0 border border-[#262626]">
-               <Image src={avatarSrc} alt={name} fill className="object-cover" />
-            </div>
-            <div className="flex flex-col justify-center">
-              {/* Title - Mulish, 900, 17px */}
-              <h3 className="text-white font-mulish font-black text-[17px] leading-none mb-1">{name}</h3>
-              <span className="text-[#727272] text-[11px] font-medium leading-none">@{handle}</span>
-            </div>
+    <Link href={`/games/${id}`}>
+      <motion.div 
+        variants={{
+          hidden: { opacity: 0, y: 50 },
+          visible: { opacity: 1, y: 0 }
+        }}
+        className="flex flex-col gap-3 cursor-pointer"
+      >
+        {/* Game Card */}
+        <div className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-primary/50 transition-colors duration-300">
+          <div className="flex-1 w-full relative rounded-[20px] overflow-hidden">
+            <Image 
+              src={imageSrc} 
+              alt={title}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
           </div>
-          <button className="w-10 h-10 rounded-full border border-[#7628DB] text-[#7628DB] flex items-center justify-center hover:bg-[#7628DB] hover:text-white transition-all">
-            <Plus className="w-5 h-5" />
-          </button>
+          <div className="h-[57px] px-2 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full relative overflow-hidden shrink-0 border border-[#262626] bg-black">
+                 <Image src={avatarSrc} alt={studio} fill className="object-cover" />
+              </div>
+          <div className="flex flex-col justify-center">
+                {/* Title - Mulish, 900, 17px */}
+                <h3 className="text-white font-mulish font-black text-[17px] leading-none mb-1">{title}</h3>
+                <span className="text-[#727272] text-[11px] font-medium leading-none">@{studio}</span>
+              </div>
+            </div>
+            
+            <FollowButton targetId={studioId} />
+
+          </div>
         </div>
-      </div>
-    </motion.div>
+        
+        {/* Description Card */}
+        <div className="rounded-[20px] border-[1.5px] border-[#262626] bg-[#0B0B0B] py-[26px] px-[22px] flex flex-col gap-4">
+          <span className="self-start h-[43px] flex items-center bg-[#1A1A1A] text-[#9CA3AF] text-xs px-4 rounded-[35px] border border-[#262626]">
+            Description
+          </span>
+          <p className="font-dm-sans font-normal text-[#9CA3AF] text-[16px] leading-[20px] tracking-[-0.01em] line-clamp-3">
+            {description}
+          </p>
+        </div>
+
+        {/* Stats Row - Separate Container */}
+        <div className="rounded-[20px] border border-[#262626] bg-[#0B0B0B] py-4 px-5 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
+            <Image src="/images/icon-post.png.svg" alt="Posts" width={18} height={18} />
+            <span>{stats.posts} posts</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
+            <Image src="/images/icon-review.png.svg" alt="Reviews" width={18} height={18} />
+            <span>{stats.reviews} reviews</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm bg-[#1A1A1A] border border-[#262626] px-4 py-2 rounded-full">
+            <Image src="/images/SVG.svg" alt="Upvotes" width={14} height={14} />
+            <span className="text-[#9CA3AF]">{stats.upvotes}</span>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  );
+};
+
+const StudioItem = ({ id, type, name, handle, logoSrc, avatarSrc, description, stats }: StudioItemProps) => {
+  const href = type === "studio" ? `/studios/${id}` : `/creators/${id}`;
+  
+  return (
+    <Link href={href}>
+      <motion.div 
+        variants={{
+          hidden: { opacity: 0, y: 50 },
+          visible: { opacity: 1, y: 0 }
+        }}
+        className="flex flex-col gap-3 cursor-pointer"
+      >
+        {/* Studio Card with Logo */}
+        <div className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-primary/50 transition-colors duration-300">
+          <div className="flex-1 w-full relative rounded-[20px] overflow-hidden bg-white flex items-center justify-center">
+            <Image 
+              src={logoSrc} 
+              alt={name}
+              width={200}
+              height={120}
+              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+          <div className="h-[57px] px-2 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full relative overflow-hidden shrink-0 border border-[#262626] bg-black">
+                 <Image src={avatarSrc} alt={name} fill className="object-cover" />
+              </div>
+              <div className="flex flex-col justify-center">
+                {/* Title - Mulish, 900, 17px */}
+                <h3 className="text-white font-mulish font-black text-[17px] leading-none mb-1">{name}</h3>
+                <span className="text-[#727272] text-[11px] font-medium leading-none">@{handle}</span>
+              </div>
+            </div>
+            
+            <FollowButton targetId={id} />
+
+          </div>
+        </div>
+      </motion.div>
+    </Link>
   );
 };
 
@@ -184,60 +236,6 @@ const ArticleItem = ({ title, author, date, stats }: ArticleItemProps) => {
   );
 };
 
-const studioItems: StudioItemProps[] = [
-  { 
-    name: "Hammer Games", 
-    handle: "#3D Artist #gamer", 
-    logoSrc: "/images/Hammer Games.png", 
-    avatarSrc: "/images/Hammer Games.png",
-    description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-    stats: { posts: 2, reviews: 141, upvotes: 174 }
-  },
-  { 
-    name: "Deluxe Studio", 
-    handle: "deluxestudios", 
-    logoSrc: "/images/Deluxe Studio.png", 
-    avatarSrc: "/images/Deluxe Studio.png",
-    description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-    stats: { posts: 2, reviews: 141, upvotes: 174 }
-  },
-  { 
-    name: "Toon Central", 
-    handle: "tooncentral", 
-    logoSrc: "/images/Toon Central.png", 
-    avatarSrc: "/images/Toon Central.png",
-    description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-    stats: { posts: 2, reviews: 141, upvotes: 174 }
-  },
-];
-
-const creatorItems: StudioItemProps[] = [
-  { 
-    name: "Hammer Games", 
-    handle: "#3D Artist #gamer", 
-    logoSrc: "/images/Hammer Games.png", 
-    avatarSrc: "/images/Hammer Games.png",
-    description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-    stats: { posts: 2, reviews: 141, upvotes: 174 }
-  },
-  { 
-    name: "Hammer Games", 
-    handle: "#3D Artist #gamer", 
-    logoSrc: "/images/Hammer Games.png", 
-    avatarSrc: "/images/Hammer Games.png",
-    description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-    stats: { posts: 2, reviews: 141, upvotes: 174 }
-  },
-  { 
-    name: "Hammer Games", 
-    handle: "#3D Artist #gamer", 
-    logoSrc: "/images/Hammer Games.png", 
-    avatarSrc: "/images/Hammer Games.png",
-    description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-    stats: { posts: 2, reviews: 141, upvotes: 174 }
-  },
-];
-
 const articleItems: ArticleItemProps[] = [
   { 
     title: "Silicon Valley Bank's crash is providing valuable lessons all over the world",
@@ -260,32 +258,9 @@ const articleItems: ArticleItemProps[] = [
 ];
 
 export default function FeaturedSection() {
-  const items = [
-    { 
-      title: "Unbroken", 
-      studio: "Raven Illusion Studio", 
-      imageSrc: "/images/Image1gun.png", 
-      avatarSrc: "/images/avatar.png",
-      description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-      stats: { posts: 2, reviews: 141, upvotes: 174 }
-    },
-    { 
-      title: "Vodou", 
-      studio: "Juju Games", 
-      imageSrc: "/images/bazz adv.png", 
-      avatarSrc: "/images/avatar.png",
-      description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-      stats: { posts: 2, reviews: 141, upvotes: 174 }
-    },
-    { 
-      title: "Vodou", 
-      studio: "Juju Games", 
-      imageSrc: "/images/BeyondService.png", 
-      avatarSrc: "/images/avatar.png",
-      description: "Lorem ipsum dolor sit amet consectetur. Tortor ut ornare quis mauris. Dapibus ut lacus suspendisse lectus integer justo nibh tristique quisque. Sem vitae convallis vulputate ac. Id et sagittis blandit a volutpat.",
-      stats: { posts: 2, reviews: 141, upvotes: 174 }
-    },
-  ];
+  const featuredGames = useQuery(api.games.getFeaturedGames) || [];
+  const featuredStudios = useQuery(api.users.getFeaturedStudios) || [];
+  const featuredCreators = useQuery(api.users.getFeaturedCreators) || [];
 
   return (
     <section className="py-20 relative">
@@ -313,6 +288,7 @@ export default function FeaturedSection() {
         </div>
 
         {/* Video Games Container */}
+        {featuredGames.length > 0 && (
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -320,7 +296,7 @@ export default function FeaturedSection() {
           transition={{ duration: 0.8 }}
           className="bg-[#121212] rounded-[48px] p-8 md:p-10 relative border border-[#1F1F1F]"
         >
-          {/* Video Games Tag - DM Sans, 500, 16px, letter-spacing -1px */}
+          {/* Video Games Tag */}
           <div className="mb-8">
             <span className="bg-[#DDC984] text-black font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
               Video Games
@@ -341,13 +317,29 @@ export default function FeaturedSection() {
              }}
              className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            {items.map((item, idx) => (
-              <FeaturedItem key={idx} {...item} />
+            {featuredGames.map((game, idx) => (
+              <FeaturedItem 
+                key={idx} 
+                id={game._id}
+                studioId={game.studioId}
+                title={game.title}
+                studio={game.studio?.name || "Indie"}
+                imageSrc={game.coverImage || "/images/unbroken_art.png"}
+                avatarSrc={game.studio?.avatar || "/images/avatar.png"}
+                description={game.description || "No description available."}
+                stats={{ 
+                  posts: 0, 
+                  reviews: 0, 
+                  upvotes: game.upvotes || 0 
+                }} 
+              />
             ))}
           </motion.div>
         </motion.div>
+        )}
 
         {/* Studios Container */}
+        {featuredStudios.length > 0 && (
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -355,7 +347,7 @@ export default function FeaturedSection() {
           transition={{ duration: 0.8 }}
           className="bg-[#121212] rounded-[48px] p-8 md:p-10 relative border border-[#1F1F1F] mt-8"
         >
-          {/* Studios Tag - DM Sans, 500, 16px, letter-spacing -1px */}
+          {/* Studios Tag */}
           <div className="mb-8">
             <span className="bg-[#D3745E] text-white font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
               Studios
@@ -376,13 +368,25 @@ export default function FeaturedSection() {
              }}
              className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            {studioItems.map((item, idx) => (
-              <StudioItem key={idx} {...item} />
+            {featuredStudios.map((studio, idx) => (
+              <StudioItem 
+                key={idx}
+                id={studio._id}
+                type="studio"
+                name={studio.name || "Studio"}
+                handle={(studio.name || "").toLowerCase().replace(/\s+/g, '')}
+                logoSrc={studio.coverImage || "/images/Hammer Games.png"}
+                avatarSrc={studio.avatar || "/images/Hammer Games.png"}
+                description={studio.bio || "No bio available."}
+                stats={{ posts: 0, reviews: 0, upvotes: 0 }}
+              />
             ))}
           </motion.div>
         </motion.div>
+        )}
 
         {/* Creators Container */}
+        {featuredCreators.length > 0 && (
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -390,7 +394,7 @@ export default function FeaturedSection() {
           transition={{ duration: 0.8 }}
           className="bg-[#121212] rounded-[48px] p-8 md:p-10 relative border border-[#1F1F1F] mt-8"
         >
-          {/* Creators Tag - DM Sans, 500, 16px, letter-spacing -1px */}
+          {/* Creators Tag */}
           <div className="mb-8">
             <span className="bg-[#DDC984] text-black font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
               Creators
@@ -411,11 +415,22 @@ export default function FeaturedSection() {
              }}
              className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            {creatorItems.map((item, idx) => (
-              <StudioItem key={idx} {...item} />
+            {featuredCreators.map((creator, idx) => (
+              <StudioItem 
+                key={idx}
+                id={creator._id}
+                type="creator"
+                name={creator.name || "Creator"}
+                handle={(creator.name || "").toLowerCase().replace(/\s+/g, '')}
+                logoSrc={creator.coverImage || "/images/Hammer Games.png"}
+                avatarSrc={creator.avatar || "/images/Hammer Games.png"}
+                description={creator.bio || "No bio available."}
+                stats={{ posts: 0, reviews: 0, upvotes: 0 }}
+              />
             ))}
           </motion.div>
         </motion.div>
+        )}
 
         {/* Top Reads Container */}
         <motion.div 

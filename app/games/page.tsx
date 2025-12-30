@@ -5,22 +5,12 @@ import { DirectoryHeader } from "@/components/directory/DirectoryHeader";
 import { DirectoryFilters } from "@/components/directory/DirectoryFilters";
 import { GameCard } from "@/components/directory/GameCard";
 import { motion } from "framer-motion";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Loader2 } from "lucide-react";
 
 export default function GamesPage() {
-  const games = [
-    { id: 1, title: "Unbroken", studio: "@Raven Illusion Studio", image: "/images/unbroken_art.png" },
-    { id: 2, title: "Vodou", studio: "@Juju Games", image: "/images/vodou_art.png" },
-    { id: 3, title: "Beyond Service", studio: "@Goondu Interactive", image: "/images/beyond_art.png" },
-    { id: 4, title: "Unbroken", studio: "@Raven Illusion Studio", image: "/images/unbroken_art.png" },
-    { id: 5, title: "Vodou", studio: "@Juju Games", image: "/images/vodou_art.png" },
-    { id: 6, title: "Beyond Service", studio: "@Goondu Interactive", image: "/images/beyond_art.png" },
-    { id: 7, title: "Unbroken", studio: "@Raven Illusion Studio", image: "/images/unbroken_art.png" },
-    { id: 8, title: "Vodou", studio: "@Juju Games", image: "/images/vodou_art.png" },
-    { id: 9, title: "Beyond Service", studio: "@Goondu Interactive", image: "/images/beyond_art.png" },
-    { id: 10, title: "Unbroken", studio: "@Raven Illusion Studio", image: "/images/unbroken_art.png" },
-    { id: 11, title: "Vodou", studio: "@Juju Games", image: "/images/vodou_art.png" },
-    { id: 12, title: "Beyond Service", studio: "@Goondu Interactive", image: "/images/beyond_art.png" },
-  ];
+  const games = useQuery(api.games.getTopGames, { limit: 50 });
 
   const container = {
     hidden: { opacity: 0 },
@@ -60,28 +50,39 @@ export default function GamesPage() {
         
         <DirectoryFilters />
         
-        <motion.div 
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-           {games.map(game => (
-             <motion.div 
-               key={game.id} 
-               variants={item}
-               whileHover={{ y: -5, transition: { duration: 0.3, ease: "easeOut" } }}
-               className="h-full"
-             >
-               <GameCard 
-                 title={game.title} 
-                 studio={game.studio} 
-                 image={game.image} 
-               />
-             </motion.div>
-           ))}
-        </motion.div>
+        {!games ? (
+          <div className="flex items-center justify-center p-20">
+            <Loader2 className="animate-spin text-primary w-10 h-10" />
+          </div>
+        ) : games.length === 0 ? (
+          <div className="text-center p-20 bg-[#111] rounded-[32px] border border-white/5">
+            <p className="text-white/40">No games found.</p>
+          </div>
+        ) : (
+          <motion.div 
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.1 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+             {games.map(game => (
+               <motion.div 
+                 key={game._id} 
+                 variants={item}
+                 whileHover={{ y: -5, transition: { duration: 0.3, ease: "easeOut" } }}
+                 className="h-full"
+               >
+                 <GameCard 
+                    id={game._id}
+                    title={game.title} 
+                    studio={game.tagline || ""} 
+                    image={game.coverImage || "/images/unbroken_art.png"} 
+                  />
+               </motion.div>
+             ))}
+          </motion.div>
+        )}
       </div>
     </main>
   );

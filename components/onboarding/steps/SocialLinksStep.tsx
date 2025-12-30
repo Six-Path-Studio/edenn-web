@@ -6,24 +6,25 @@ import { BackArrowIcon } from "@/components/icons";
 interface SocialLinksStepProps {
   onNext: () => void;
   onBack: () => void;
+  initialData?: any;
   updateData?: (data: any) => void;
 }
 
 interface SocialLinks {
-  website: string;
   instagram: string;
   tiktok: string;
-  x: string;
-  linkedin: string;
+  twitter: string;
+  youtube: string;
+  twitch: string;
 }
 
-export default function SocialLinksStep({ onNext, onBack, updateData }: SocialLinksStepProps) {
+export default function SocialLinksStep({ onNext, onBack, initialData, updateData }: SocialLinksStepProps) {
   const [socialLinks, setSocialLinks] = useState<SocialLinks>({
-    website: "",
-    instagram: "",
-    tiktok: "",
-    x: "",
-    linkedin: "",
+    instagram: initialData?.instagram || "",
+    tiktok: initialData?.tiktok || "",
+    twitter: initialData?.twitter || "",
+    youtube: initialData?.youtube || "",
+    twitch: initialData?.twitch || "",
   });
 
   const handleInputChange = (field: keyof SocialLinks, value: string) => {
@@ -47,16 +48,6 @@ export default function SocialLinksStep({ onNext, onBack, updateData }: SocialLi
         <div className="input-group">
           <input
             type="text"
-            placeholder="Website: Link"
-            value={socialLinks.website}
-            onChange={(e) => handleInputChange("website", e.target.value)}
-            className="text-input"
-          />
-        </div>
-
-        <div className="input-group">
-          <input
-            type="text"
             placeholder="Instagram:"
             value={socialLinks.instagram}
             onChange={(e) => handleInputChange("instagram", e.target.value)}
@@ -67,7 +58,7 @@ export default function SocialLinksStep({ onNext, onBack, updateData }: SocialLi
         <div className="input-group">
           <input
             type="text"
-            placeholder="Tiktok"
+            placeholder="Tiktok:"
             value={socialLinks.tiktok}
             onChange={(e) => handleInputChange("tiktok", e.target.value)}
             className="text-input"
@@ -77,9 +68,9 @@ export default function SocialLinksStep({ onNext, onBack, updateData }: SocialLi
         <div className="input-group">
           <input
             type="text"
-            placeholder="X:"
-            value={socialLinks.x}
-            onChange={(e) => handleInputChange("x", e.target.value)}
+            placeholder="Twitter / X:"
+            value={socialLinks.twitter}
+            onChange={(e) => handleInputChange("twitter", e.target.value)}
             className="text-input"
           />
         </div>
@@ -87,9 +78,19 @@ export default function SocialLinksStep({ onNext, onBack, updateData }: SocialLi
         <div className="input-group">
           <input
             type="text"
-            placeholder="Linkedin:"
-            value={socialLinks.linkedin}
-            onChange={(e) => handleInputChange("linkedin", e.target.value)}
+            placeholder="Youtube:"
+            value={socialLinks.youtube}
+            onChange={(e) => handleInputChange("youtube", e.target.value)}
+            className="text-input"
+          />
+        </div>
+
+        <div className="input-group">
+          <input
+            type="text"
+            placeholder="Twitch:"
+            value={socialLinks.twitch}
+            onChange={(e) => handleInputChange("twitch", e.target.value)}
             className="text-input"
           />
         </div>

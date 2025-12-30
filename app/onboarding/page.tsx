@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   OnboardingSlider,
@@ -13,6 +13,10 @@ import {
 } from "@/components/onboarding";
 
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
 // Define master state type
 interface MasterFormData {
@@ -29,6 +33,22 @@ interface MasterFormData {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const updateUser = useMutation(api.users.updateUser);
+  
+  // Check if user is already onboarded
+  const dbUser = useQuery(
+    api.users.getUserByEmail,
+    user?.email ? { email: user.email } : "skip"
+  );
+  
+  // Redirect already onboarded users to dashboard
+  useEffect(() => {
+    if (dbUser?.onboarded) {
+      router.push("/profile");
+    }
+  }, [dbUser, router]);
+  
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 5;
 
@@ -61,11 +81,39 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleFinish = () => {
-    // Save to localStorage for simulation
-    console.log("Onboarding completed!", formData);
-    localStorage.setItem("edenn_user_profile", JSON.stringify(formData));
-    router.push("/profile");
+  const handleFinish = async () => {
+    try {
+      if (user?.id) {
+        // Prepare socials object, removing empty strings
+        const socials: Record<string, string> = {};
+        Object.entries(formData.socials).forEach(([key, value]) => {
+          if (value && value.trim() !== "") {
+            socials[key] = value;
+          }
+        });
+
+        // Save to Convex with onboarded flag
+        await updateUser({
+          id: user.id as Id<"users">,
+          name: formData.userType === "studio" ? formData.studioName || "" : formData.username,
+          bio: formData.about,
+          location: formData.country,
+          role: formData.userType || "player",
+          avatar: formData.profileImage,
+          coverImage: formData.coverImage,
+          socials: Object.keys(socials).length > 0 ? socials : undefined,
+          onboarded: true,
+        });
+      }
+
+      console.log("Onboarding completed!", formData);
+      localStorage.setItem("edenn_onboarding_completed", "true");
+      router.push("/profile");
+    } catch (error) {
+      console.error("Failed to complete onboarding:", error);
+      // Still redirect for demo purposes or show error
+      router.push("/profile");
+    }
   };
 
   const renderStep = () => {
@@ -95,6 +143,7 @@ export default function OnboardingPage() {
           <SocialLinksStep 
             onNext={goToNextStep} 
             onBack={goToPreviousStep} 
+            initialData={formData.socials}
             updateData={(socials) => updateFormData({ socials })}
           />
         );

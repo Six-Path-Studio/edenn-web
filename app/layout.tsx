@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Mulish, Preahvihear, DM_Sans } from "next/font/google";
 import localFont from "next/font/local";
+import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import "./globals.css";
 
 const mulish = Mulish({
@@ -40,7 +42,11 @@ export default function RootLayout({
       <body
         className={`${mulish.variable} ${preahvihear.variable} ${dmSans.variable} ${powerGrotesk.variable} antialiased`}
       >
-        {children}
+        <ConvexClientProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );

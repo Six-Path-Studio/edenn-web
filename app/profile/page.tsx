@@ -1,3 +1,5 @@
+"use client";
+
 import Navbar from "@/components/landing/Navbar";
 import { ProfileHeader, ProfileContent } from "@/components/profile";
 
