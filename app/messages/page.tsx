@@ -333,7 +333,7 @@ export default function MessagesPage() {
                         key={msg._id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/message ${isGrouped ? 'mt-[1px]' : 'mt-4'}`}
+                        className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/message ${isGrouped ? 'mt-px' : 'mt-4'}`}
                       >
                         <div className={`max-w-[65%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                            <div className="flex items-center gap-2 relative">

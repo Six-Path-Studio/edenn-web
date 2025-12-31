@@ -86,8 +86,8 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md font-power">
-      <Container className="flex items-center justify-between py-4 relative">
+      <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center pt-6 px-4 pointer-events-none">
+      <Container className="flex items-center justify-between py-4 relative pointer-events-auto">
         {/* Logo */}
         <div className="flex items-center gap-2 cursor-pointer">
           <Link href="/">
@@ -326,6 +326,6 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
           window.location.reload();
         }}
       />
-    </nav>
+    </div>
   );
 }

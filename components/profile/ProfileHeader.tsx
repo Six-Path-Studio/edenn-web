@@ -96,6 +96,9 @@ export default function ProfileHeader() {
             <p className="text-white/60 text-sm sm:text-base font-light">
               {displayBio}
             </p>
+            <p className="text-white/80 text-sm font-medium pt-1">
+              {dbUser.followersCount || 0} {dbUser.followersCount === 1 ? "Follower" : "Followers"}
+            </p>
           </div>
 
           {/* Action Buttons */}

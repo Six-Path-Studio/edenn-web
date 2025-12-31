@@ -10,6 +10,13 @@ export const getUser = query({
     const user = await ctx.db.get(args.id);
     if (!user) return null;
 
+    // Get followers count
+    const followers = await ctx.db
+      .query("follows")
+      .withIndex("by_following", (q) => q.eq("followingId", user._id))
+      .collect();
+    const followersCount = followers.length;
+
     let avatarUrl = user.avatar;
     if (user.avatar && !user.avatar.startsWith("http") && !user.avatar.startsWith("/")) {
       try {
@@ -26,7 +33,22 @@ export const getUser = query({
       } catch (e) {}
     }
 
-    return { ...user, avatar: avatarUrl, coverImage: coverImageUrl };
+    let snapshots = user.snapshots;
+    if (snapshots && Array.isArray(snapshots)) {
+        snapshots = await Promise.all(snapshots.map(async (s: any) => {
+            if (s.url && !s.url.startsWith("http") && !s.url.startsWith("/")) {
+                try {
+                    const url = await ctx.storage.getUrl(s.url as Id<"_storage">);
+                    return { ...s, url: url || s.url };
+                } catch (e) {
+                    return s;
+                }
+            }
+            return s;
+        }));
+    }
+
+    return { ...user, avatar: avatarUrl, coverImage: coverImageUrl, snapshots, followersCount };
   },
 });
 
@@ -41,6 +63,12 @@ export const getUserByToken = query({
 
     if (!user) return null;
 
+    const followers = await ctx.db
+      .query("follows")
+      .withIndex("by_following", (q) => q.eq("followingId", user._id))
+      .collect();
+    const followersCount = followers.length;
+
     let avatarUrl = user.avatar;
     if (user.avatar && !user.avatar.startsWith("http") && !user.avatar.startsWith("/")) {
       try {
@@ -57,7 +85,23 @@ export const getUserByToken = query({
       } catch (e) {}
     }
 
-    return { ...user, avatar: avatarUrl, coverImage: coverImageUrl };
+    // Resolve snapshots for current user too
+    let snapshots = user.snapshots;
+    if (snapshots && Array.isArray(snapshots)) {
+        snapshots = await Promise.all(snapshots.map(async (s: any) => {
+            if (s.url && !s.url.startsWith("http") && !s.url.startsWith("/")) {
+                try {
+                    const url = await ctx.storage.getUrl(s.url as Id<"_storage">);
+                    return { ...s, url: url || s.url };
+                } catch (e) {
+                    return s;
+                }
+            }
+            return s;
+        }));
+    }
+
+    return { ...user, avatar: avatarUrl, coverImage: coverImageUrl, snapshots, followersCount };
   },
 });
 
@@ -251,6 +295,12 @@ export const getUserByEmail = query({
 
     if (!user) return null;
 
+    const followers = await ctx.db
+      .query("follows")
+      .withIndex("by_following", (q) => q.eq("followingId", user._id))
+      .collect();
+    const followersCount = followers.length;
+
     // Resolve storage URLs if they look like storage IDs
     let avatarUrl = user.avatar;
     if (user.avatar && !user.avatar.startsWith("http") && !user.avatar.startsWith("/")) {
@@ -276,6 +326,7 @@ export const getUserByEmail = query({
       ...user,
       avatar: avatarUrl,
       coverImage: coverImageUrl,
+      followersCount,
       snapshots: user.snapshots ? await Promise.all(user.snapshots.map(async (s: any) => {
         if (s.url && !s.url.startsWith("http") && !s.url.startsWith("/")) {
             try {

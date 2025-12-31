@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/landing/Navbar";
 import { DirectoryHeader } from "@/components/directory/DirectoryHeader";
 import { DirectoryFilters } from "@/components/directory/DirectoryFilters";
-import { Plus, Triangle } from "lucide-react";
+import { Plus, Triangle, Search } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
@@ -16,7 +16,9 @@ import { Id } from "@/convex/_generated/dataModel";
 
 export default function StudiosPage() {
   const { user } = useAuth();
-  const studios = useQuery(api.users.getStudios) || [];
+  const studiosRaw = useQuery(api.users.getStudios);
+  const studios = studiosRaw || [];
+  const isLoading = studiosRaw === undefined;
   const toggleFollow = useMutation(api.users.toggleFollow);
   const toggleUpvote = useMutation(api.users.toggleUpvoteProfile);
 
@@ -59,17 +61,27 @@ export default function StudiosPage() {
           <DirectoryFilters />
         </div>
         
-        {studios.length === 0 ? (
-           <div className="text-center text-gray-500 py-20">No studios found yet. Be the first to join!</div>
-        ) : (
-          <motion.div 
+        <motion.div 
             variants={container}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.05 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-             {studios.map((s, i) => (
+        >
+          {isLoading ? (
+             Array.from({ length: 6 }).map((_, i) => (
+               <div key={i} className="h-[302px] rounded-[31px] bg-[#1A1A1A] border border-[#333] animate-pulse" />
+             ))
+          ) : studios.length === 0 ? (
+             <div className="col-span-full py-20 bg-[#0B0B0B] rounded-[32px] border border-[#222] flex flex-col items-center justify-center text-center">
+                 <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center mb-4">
+                     <Search className="w-8 h-8 text-white/20" />
+                 </div>
+                 <h3 className="text-white font-medium text-lg mb-1">No Studios Found</h3>
+                 <p className="text-white/40 text-sm">Be the first to join properly.</p>
+             </div>
+          ) : (
+             studios.map((s, i) => (
                <Link href={`/profile/${s._id}`} key={i}>
                  <motion.div 
                    variants={item}
@@ -135,10 +147,10 @@ export default function StudiosPage() {
                            }
                            
                            try {
-                              await toggleFollow({ 
-                                  followerId: user.id as Id<"users">, 
-                                  followingId: s._id 
-                              });
+                               await toggleFollow({ 
+                                   followerId: user.id as Id<"users">, 
+                                   followingId: s._id 
+                               });
                            } catch (err: any) {
                                const errorMessage = err instanceof Error ? err.message : "Unknown error";
                                if (errorMessage.includes("self")) {
@@ -154,9 +166,9 @@ export default function StudiosPage() {
                    </div>
                  </motion.div>
                </Link>
-             ))}
-          </motion.div>
-        )}
+             ))
+          )}
+        </motion.div>
       </div>
     </main>
   );

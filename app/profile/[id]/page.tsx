@@ -102,6 +102,9 @@ export default function UserProfilePage() {
                         📍 {profileUser.location}
                     </p>
                 )}
+                <p className="text-white/80 font-dm-sans text-sm font-medium mt-2">
+                    {profileUser.followersCount || 0} {profileUser.followersCount === 1 ? "Follower" : "Followers"}
+                </p>
              </div>
           </div>
 

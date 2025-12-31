@@ -13,7 +13,9 @@ import { api } from "@/convex/_generated/api";
 import Link from "next/link"; // Added Link import
 
 export default function CreatorsPage() {
-  const creators = useQuery(api.users.getCreators) || [];
+  const creatorsRaw = useQuery(api.users.getCreators);
+  const creators = creatorsRaw || [];
+  const isLoading = creatorsRaw === undefined;
 
   const container = {
     hidden: { opacity: 0 },
@@ -55,7 +57,7 @@ export default function CreatorsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white overflow-hidden text-balance">
+    <main className="min-h-screen bg-black text-white text-balance">
       <Navbar isLoggedIn={true} />
       
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
@@ -116,15 +118,24 @@ export default function CreatorsPage() {
                <div className="bg-transparent rounded-[32px] flex flex-col gap-4">
                 <motion.div 
                   variants={container}
-                  initial="hidden"
-                  whileInView="show"
-                  viewport={{ once: true, amount: 0.05 }}
+                  initial="show"
+                  animate="show"
                   className="flex flex-col gap-3"
                 >
-                    {creators === undefined ? (
-                        <div className="text-white/50 py-10 text-center">Loading creators...</div>
-                    ) : creators.length === 0 ? (
-                        <div className="text-white/50 py-10 text-center">No creators found.</div>
+                    {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                             <div key={i} className="bg-[#1A1A1A] rounded-[24px] h-[100px] w-full animate-pulse border border-[#333]" />
+                        ))
+                    ) : (creators || []).length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-[#0B0B0B] rounded-[24px] border border-[#222]">
+                            <div className="w-16 h-16 bg-[#1A1A1A] rounded-full flex items-center justify-center">
+                                <Search className="w-8 h-8 text-white/20" />
+                            </div>
+                            <div className="space-y-1">
+                                <h3 className="text-white font-medium text-lg">No Creators Found</h3>
+                                <p className="text-white/40 text-sm">Be the first to join or check back later.</p>
+                            </div>
+                        </div>
                     ) : (
                         creators.map((c, i) => (
                       <Link href={`/profile/${c._id}`} key={i} className="block w-full">
@@ -210,20 +221,30 @@ export default function CreatorsPage() {
               <div className="bg-[#111111] border border-white/5 rounded-[32px] p-5 min-h-[400px]">
                    <motion.div 
                       variants={container}
-                      initial="hidden"
-                      whileInView="show"
-                      viewport={{ once: true, amount: 0.05 }}
+                      initial="show"
+                      animate="show"
                       className="flex flex-col gap-3"
                    >
-                      {creators.slice(0, 8).map((c, i) => (
+                      {isLoading ? (
+                           <div className="space-y-4">
+                               <div className="h-[60px] bg-[#1A1A1A] rounded-[16px] w-full animate-pulse border border-[#333]" />
+                               <div className="h-[60px] bg-[#1A1A1A] rounded-[16px] w-full animate-pulse border border-[#333]" />
+                               <div className="h-[60px] bg-[#1A1A1A] rounded-[16px] w-full animate-pulse border border-[#333]" />
+                           </div>
+                      ) : (creators || []).length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-[300px] text-white/20">
+                              <p className="text-sm">No featured creators yet.</p>
+                          </div>
+                      ) : (
+                          creators.slice(0, 8).map((c, i) => (
                         <motion.div key={i} variants={sidebarItem}>
                           <CreatorSidebarCard 
                             name={c.name} 
                             tags={c.tags} 
-                            upvotes={232} 
+                            upvotes={c.upvotes || 0}
                           />
                         </motion.div>
-                      ))}
+                      )))}
                    </motion.div>
               </div>
            </div>
