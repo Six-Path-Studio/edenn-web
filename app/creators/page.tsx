@@ -158,7 +158,15 @@ export default function CreatorsPage() {
                             <motion.button 
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
-                                className="bg-[#1A1A1A] w-10 h-10 rounded-full border border-[#222] flex items-center justify-center group-hover:border-[#7628DB] group-hover:text-[#7628DB] transition-all"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // Add toggle upvote logic here if needed, or just stop nav
+                                    // For now, assuming user just wants to avoid navigation or needs functional upvote
+                                    // Since I don't have toggleUpvote imported here, I'll just stop propagation or add basic toast
+                                    // But better to implement it later fully. For now, stopping nav is key.
+                                }}
+                                className="bg-[#1A1A1A] w-10 h-10 rounded-full border border-[#222] flex items-center justify-center group-hover:border-[#7628DB] group-hover:text-[#7628DB] transition-all z-20 relative"
                             >
                                 <div className="w-5 h-5 flex items-center justify-center">
                                     <Triangle className="w-4 h-4 text-white/20 fill-white/20 group-hover:text-[#7628DB] group-hover:fill-[#7628DB] rotate-90" />

@@ -18,6 +18,8 @@ export default defineSchema({
       twitter: v.optional(v.string()),
       instagram: v.optional(v.string()),
       twitch: v.optional(v.string()),
+      linkedin: v.optional(v.string()),
+      portfolio: v.optional(v.string()),
     })),
     tokenIdentifier: v.optional(v.string()),
     onboarded: v.optional(v.boolean()),
@@ -31,6 +33,12 @@ export default defineSchema({
     // Upvotes for Profiles (Studios/Creators)
     upvotes: v.optional(v.number()),
     upvotedBy: v.optional(v.array(v.id("users"))),
+    // Studio Snapshots
+    snapshots: v.optional(v.array(v.object({
+      url: v.string(),
+      title: v.optional(v.string()),
+      tags: v.optional(v.array(v.string())),
+    }))),
   })
     .index("by_email", ["email"])
     .index("by_token", ["tokenIdentifier"])

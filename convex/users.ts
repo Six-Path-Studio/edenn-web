@@ -78,7 +78,23 @@ const resolveUserImages = async (ctx: any, user: any) => {
       if (url) coverImageUrl = url;
     } catch (e) {}
   }
-  return { ...user, avatar: avatarUrl, coverImage: coverImageUrl };
+
+  let snapshots = user.snapshots;
+  if (snapshots && Array.isArray(snapshots)) {
+      snapshots = await Promise.all(snapshots.map(async (s: any) => {
+          if (s.url && !s.url.startsWith("http") && !s.url.startsWith("/")) {
+              try {
+                  const url = await ctx.storage.getUrl(s.url as Id<"_storage">);
+                  return { ...s, url: url || s.url };
+              } catch (e) {
+                  return s;
+              }
+          }
+          return s;
+      }));
+  }
+
+  return { ...user, avatar: avatarUrl, coverImage: coverImageUrl, snapshots };
 };
 
 // Get all creators
@@ -187,8 +203,15 @@ export const updateUser = mutation({
       twitter: v.optional(v.string()),
       instagram: v.optional(v.string()),
       twitch: v.optional(v.string()),
+      linkedin: v.optional(v.string()),
+      portfolio: v.optional(v.string()),
     })),
     onboarded: v.optional(v.boolean()),
+    snapshots: v.optional(v.array(v.object({
+      url: v.string(),
+      title: v.optional(v.string()),
+      tags: v.optional(v.array(v.string())),
+    }))),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -253,6 +276,17 @@ export const getUserByEmail = query({
       ...user,
       avatar: avatarUrl,
       coverImage: coverImageUrl,
+      snapshots: user.snapshots ? await Promise.all(user.snapshots.map(async (s: any) => {
+        if (s.url && !s.url.startsWith("http") && !s.url.startsWith("/")) {
+            try {
+                const url = await ctx.storage.getUrl(s.url as Id<"_storage">);
+                return { ...s, url: url || s.url };
+            } catch (e) {
+                return s;
+            }
+        }
+        return s;
+      })) : undefined,
     };
   },
 });
