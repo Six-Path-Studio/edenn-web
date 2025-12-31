@@ -33,6 +33,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
   // Real notifications
   const activeNotifications = useQuery(api.notifications.getNotifications, user?.id ? { userId: user.id } : "skip") || [];
   const unreadMessageCount = useQuery(api.notifications.getUnreadMessageCount, user?.id ? { userId: user.id } : "skip") || 0;
+  const unreadNotificationCount = useQuery(api.notifications.getUnreadNotificationCount, user?.id ? { userId: user.id } : "skip") || 0;
   
   // Helper to validate image URLs
   const getValidImageUrl = (url: string | undefined, fallback: string): string => {
@@ -145,9 +146,14 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                   <div className="relative dropdown-trigger">
                     <button 
                       onClick={() => toggleDropdown("notifications")}
-                      className={`p-2 rounded-full border border-[#3c3c3c] bg-[#171717] hover:bg-white/10 transition-colors ${activeDropdown === "notifications" ? "text-white border-white" : "text-white"}`}
+                      className={`p-2 rounded-full border border-[#3c3c3c] bg-[#171717] hover:bg-white/10 transition-colors ${activeDropdown === "notifications" ? "text-white border-white" : "text-white"} relative`}
                     >
                         <Bell className="w-5 h-5" />
+                        {unreadNotificationCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-[#171717]">
+                            {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+                          </span>
+                        )}
                     </button>
                     
                     {/* Notification Dropdown */}
@@ -156,7 +162,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-[#222]">
                           <span className="text-white text-lg font-medium">Notification</span>
-                          <Link href="/notifications" className="text-white text-md hover:underline">See all</Link>
+                          <Link href="#" className="text-white text-md hover:underline">See all</Link>
                         </div>
                         
                         {/* List */}

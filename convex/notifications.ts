@@ -224,3 +224,33 @@ export const getUnreadMessageCount = query({
         return unread.filter(n => n.type === "message").length;
     },
 });
+
+export const getUnreadNotificationCount = query({
+    args: { userId: v.optional(v.string()) },
+    handler: async (ctx, args) => {
+        let targetId: Id<"users"> | undefined;
+        if (args.userId) {
+            targetId = args.userId as Id<"users">;
+        } else {
+             const identity = await ctx.auth.getUserIdentity();
+             if (identity) {
+                 const user = await ctx.db
+                  .query("users")
+                  .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+                  .first();
+                 targetId = user?._id;
+             }
+        }
+
+        if (!targetId) return 0;
+
+        const unread = await ctx.db
+            .query("notifications")
+            .withIndex("by_recipient_unread", (q) => q.eq("recipientId", targetId).eq("read", false))
+            .collect();
+            
+        // Filter OUT 'message' (handled by message icon)
+        // Also maybe filter out 'upload' if we don't want badges for that
+        return unread.filter(n => n.type !== "message").length;
+    },
+});
