@@ -29,6 +29,14 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
   );
 
   const displayName = dbUser?.name || user?.name || "User";
+
+  // Auto-logout if user exists locally but not in DB (stale session)
+  useEffect(() => {
+    if (user && dbUser === null) {
+      console.warn("User not found in DB, signing out...");
+      signOut();
+    }
+  }, [user, dbUser, signOut]);
   
   // Real notifications
   const activeNotifications = useQuery(api.notifications.getNotifications, user?.id ? { userId: user.id } : "skip") || [];
@@ -80,21 +88,23 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md font-power">
       <Container className="flex items-center justify-between py-4 relative">
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <Image 
-            src="/images/edenn.svg" 
-            alt="Edenn Logo" 
-            width={100} 
-            height={32} 
-            className="h-8 w-auto"
-          />
+        <div className="flex items-center gap-2 cursor-pointer">
+          <Link href="/">
+            <Image 
+              src="/images/edenn.svg" 
+              alt="Edenn Logo" 
+              width={100} 
+              height={32} 
+              className="h-8 w-auto"
+            />
+          </Link>
         </div>
 
         {/* Center: Nav Links + Search */}
         <div className="hidden md:flex items-center gap-6">
           <div className="relative dropdown-trigger">
             <button 
-              className={`flex items-center gap-1 text-sm font-medium transition-colors ${activeDropdown === 'home' ? 'text-white' : 'text-accent'}`}
+              className={`flex items-center gap-1 text-sm font-medium transition-colors ${activeDropdown === 'home' ? 'text-[#EBCF61]' : 'text-accent'}`}
               onClick={() => toggleDropdown("home")}
             >
               Home <ChevronDown className={`w-4 h-4 transition-transform ${activeDropdown === 'home' ? 'rotate-180' : ''}`} />

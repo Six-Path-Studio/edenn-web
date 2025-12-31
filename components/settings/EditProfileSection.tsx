@@ -114,203 +114,168 @@ export default function EditProfileSection() {
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      {/* 1. Edit Profile Container */}
-      <div className="bg-[#0B0B0B] border border-white/5 rounded-[40px] p-10 shadow-2xl">
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-5xl font-preahvihear text-white tracking-tight">Edit Profile</h1>
-          <div className="flex gap-4">
+      {/* 1. Edit Profile Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-5xl font-preahvihear text-white tracking-tight">Edit Profile</h1>
+        <div className="flex gap-4">
+            <button className="px-6 py-2 border border-white/20 rounded-full text-white font-dm-sans text-sm hover:bg-white/5 transition-all flex items-center gap-2">
+                <Globe size={16} /> Share Link
+            </button>
             <Link 
-              href="/profile"
-              className="px-6 py-2 bg-[#7628db] rounded-full text-white font-dm-sans text-sm hover:bg-[#8b3eff] transition-all shadow-lg flex items-center gap-2"
+            href="/profile"
+            className="px-6 py-2 bg-[#7628db] rounded-full text-white font-dm-sans text-sm hover:bg-[#8b3eff] transition-all shadow-lg flex items-center gap-2"
             >
-              View Profile
+            View Profile
             </Link>
-          </div>
         </div>
+      </div>
 
-        <div className="border-t border-white/5 pt-10 flex flex-col gap-8">
-          {/* Avatar Upload */}
-          <div className="flex items-center gap-8">
-            <div 
-              className="w-32 h-32 rounded-full overflow-hidden bg-[#111] border-2 border-white/10 relative group cursor-pointer"
-              onClick={() => avatarInputRef.current?.click()}
-            >
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/20">
-                  <User size={40} />
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                <UploadCloud size={24} className="text-white" />
-              </div>
-            </div>
-            <div>
-              <h3 className="text-white font-medium mb-1">Profile Photo</h3>
-              <p className="text-white/40 text-sm mb-3">Upload a new profile picture. Recommended size: 400x400px.</p>
-              <button 
-                onClick={() => avatarInputRef.current?.click()}
-                className="text-primary text-sm font-medium hover:underline"
-              >
-                Change Photo
-              </button>
-            </div>
-            <input 
-              ref={avatarInputRef}
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
-              onChange={(e) => handleImageUpload(e, 'avatar')}
-            />
-          </div>
-
+      <div className="bg-[#0B0B0B] border border-white/5 rounded-[40px] p-10 shadow-2xl space-y-8">
+          {/* Row 1: Email & Username */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-white/60 text-sm ml-2">Display Name</label>
-              <input 
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                type="text" 
-                placeholder="Ex: Dirty Monkey Studios" 
-                className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
-              />
+                <input 
+                    disabled
+                    value={user?.email || ""}
+                    className="w-full bg-[#1A1A1A] border border-[#222] rounded-xl px-5 py-4 text-white/50 font-dm-sans cursor-not-allowed" 
+                    placeholder="Email Address"
+                />
             </div>
             <div className="space-y-2">
-              <label className="text-white/60 text-sm ml-2">Location</label>
-              <input 
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                type="text" 
-                placeholder="Ex: Lagos, Nigeria" 
-                className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
-              />
+                <input 
+                    value={formData.name.toLowerCase().replace(/\s/g, '')}
+                    readOnly
+                    className="w-full bg-[#1A1A1A] border border-[#222] rounded-xl px-5 py-4 text-white/50 font-dm-sans" 
+                    placeholder="Username"
+                />
             </div>
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-white/60 text-sm ml-2">Bio / About</label>
+          </div>
+
+          {/* Row 2: Names (Simulated split for UI, combined for DB) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+                <input 
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
+                    placeholder="First Name / Display Name"
+                />
+            </div>
+            <div className="space-y-2">
+                 <input 
+                    disabled
+                    placeholder="Last Name"
+                    className="w-full bg-[#1A1A1A] border border-[#222] rounded-xl px-5 py-4 text-white/50 font-dm-sans cursor-not-allowed" 
+                />
+            </div>
+          </div>
+
+           {/* Row 3: Location & Categories */}
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+                <input 
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
+                    placeholder="Location"
+                />
+            </div>
+            <div className="space-y-2">
+                 <select className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans appearance-none">
+                     <option>Categories</option>
+                     <option>Game Dev</option>
+                     <option>Artist</option>
+                 </select>
+            </div>
+          </div>
+
+          {/* Row 4: About */}
+          <div className="space-y-2">
               <textarea 
                 name="bio"
                 value={formData.bio}
                 onChange={handleInputChange}
-                placeholder="Tell us about yourself or your studio..." 
-                rows={4} 
+                placeholder="About Game / Bio" 
+                rows={6} 
                 className="w-full bg-[#111] border border-[#222] rounded-[24px] px-6 py-5 outline-none focus:border-primary transition-colors text-white font-dm-sans resize-none" 
               />
+          </div>
+
+          {/* Row 5: Cover Photo & Featured Video/Socials */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left: Cover Photo */}
+              <div className="space-y-3">
+                  <h3 className="text-white font-dm-sans font-medium opacity-60">Cover Photo</h3>
+                   <div 
+                        className="w-full h-[240px] rounded-[32px] bg-[#1A1A1A] border border-dashed border-[#333] flex flex-col items-center justify-center gap-3 hover:bg-[#222] transition-all cursor-pointer relative overflow-hidden group"
+                        onClick={() => coverInputRef.current?.click()}
+                    >
+                        {coverPreview ? (
+                        <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+                        ) : (
+                        <UploadCloud size={40} className="text-white/20" />
+                        )}
+                        <input 
+                            ref={coverInputRef}
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => handleImageUpload(e, 'cover')}
+                        />
+                    </div>
+              </div>
+
+               {/* Right: Socials */}
+               <div className="space-y-3">
+                  <h3 className="text-white font-dm-sans font-medium opacity-60">Featured Video / Socials:</h3>
+                   <div className="space-y-4">
+                       <div className="relative">
+                           <input 
+                              name="youtube"
+                              value={formData.youtube}
+                              onChange={handleInputChange}
+                              placeholder="Youtube Trailer:"
+                              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-3 outline-none focus:border-primary text-white text-sm"
+                           />
+                           <Youtube size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20" />
+                       </div>
+                       <div className="relative">
+                           <input 
+                              name="instagram"
+                              value={formData.instagram}
+                              onChange={handleInputChange}
+                              placeholder="Instagram"
+                              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-3 outline-none focus:border-primary text-white text-sm"
+                           />
+                            <Instagram size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20" />
+                       </div>
+                        <div className="relative">
+                           <input 
+                              name="tiktok"
+                              value={formData.tiktok}
+                              onChange={handleInputChange}
+                              placeholder="TikTok"
+                              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-3 outline-none focus:border-primary text-white text-sm"
+                           />
+                       </div>
+                   </div>
+               </div>
+          </div>
+          
+           {/* Save Button Inline */}
+            <div className="pt-4">
+                <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className={`bg-[#7628db] text-white px-10 py-3 rounded-full font-dm-sans font-medium transition-all hover:bg-[#8b3eff] disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                {isSaving ? "Saving..." : "Save"}
+                </button>
             </div>
-          </div>
-        </div>
-
-        {/* Cover Photo */}
-        <div className="mt-10 space-y-4">
-          <h3 className="text-white font-dm-sans font-medium opacity-60">Cover Photo</h3>
-          <div 
-            className="w-full h-48 rounded-[32px] bg-[#111] border border-dashed border-[#333] flex flex-col items-center justify-center gap-3 hover:bg-[#161616] transition-all cursor-pointer relative overflow-hidden group"
-            onClick={() => coverInputRef.current?.click()}
-          >
-            {coverPreview ? (
-              <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
-            ) : (
-              <UploadCloud size={40} className="text-white/20" />
-            )}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all">
-              <p className="text-white text-sm font-medium">Change Cover Image</p>
-            </div>
-          </div>
-          <input 
-            ref={coverInputRef}
-            type="file" 
-            accept="image/*" 
-            className="hidden" 
-            onChange={(e) => handleImageUpload(e, 'cover')}
-          />
-        </div>
       </div>
 
-      {/* 2. Social Links Container */}
-      <div className="bg-[#0B0B0B] border border-white/5 rounded-[40px] p-10 shadow-2xl">
-        <h2 className="text-4xl font-preahvihear text-white mb-10">Social Links</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-white/60 text-sm ml-2">Instagram</label>
-            <input 
-              name="instagram"
-              value={formData.instagram}
-              onChange={handleInputChange}
-              type="text" 
-              placeholder="Username or URL" 
-              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-white/60 text-sm ml-2">TikTok</label>
-            <input 
-              name="tiktok"
-              value={formData.tiktok}
-              onChange={handleInputChange}
-              type="text" 
-              placeholder="Username or URL" 
-              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-white/60 text-sm ml-2">X (Twitter)</label>
-            <input 
-              name="twitter"
-              value={formData.twitter}
-              onChange={handleInputChange}
-              type="text" 
-              placeholder="Username or URL" 
-              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-white/60 text-sm ml-2">YouTube</label>
-            <input 
-              name="youtube"
-              value={formData.youtube}
-              onChange={handleInputChange}
-              type="text" 
-              placeholder="Channel URL" 
-              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-white/60 text-sm ml-2">Twitch</label>
-            <input 
-              name="twitch"
-              value={formData.twitch}
-              onChange={handleInputChange}
-              type="text" 
-              placeholder="Channel URL" 
-              className="w-full bg-[#111] border border-[#222] rounded-xl px-5 py-4 outline-none focus:border-primary transition-colors text-white font-dm-sans" 
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Floating Save Button */}
-      <div className="fixed bottom-10 right-10 z-50">
-        <button 
-          onClick={handleSave}
-          disabled={isSaving}
-          className={`flex items-center gap-3 px-8 py-4 rounded-full font-dm-sans font-bold transition-all shadow-2xl ${
-            isSuccess 
-              ? "bg-green-600 text-white" 
-              : "bg-primary hover:bg-[#8b3eff] text-white"
-          }`}
-        >
-          {isSaving ? (
-            <Loader2 className="animate-spin" size={20} />
-          ) : isSuccess ? (
-            <Check size={20} />
-          ) : (
-            <Upload size={20} />
-          )}
-          {isSaving ? "Saving..." : isSuccess ? "Saved!" : "Save Changes"}
-        </button>
-      </div>
     </div>
   );
 }

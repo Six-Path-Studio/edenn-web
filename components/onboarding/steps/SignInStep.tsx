@@ -54,7 +54,7 @@ export default function SignInStep({ onNext }: SignInStepProps) {
   };
 
   return (
-    <div className="sign-in-step">
+    <div className="flex flex-col items-center w-full max-w-[400px] text-center mx-auto animate-in fade-in zoom-in-95 duration-500">
       {/* Google Identity Services Script */}
       <Script 
         src="https://accounts.google.com/gsi/client" 
@@ -63,202 +63,65 @@ export default function SignInStep({ onNext }: SignInStepProps) {
 
       {/* Show email if authenticated */}
       {isAuthenticated && user && (
-        <div className="auth-success">
-          <CheckCircle size={20} className="text-green-500" />
+        <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-3 rounded-xl mb-6 text-sm w-full justify-center">
+          <CheckCircle size={18} />
           <span>Signed in as <strong>{user.email}</strong></span>
         </div>
       )}
 
-      <h1 className="title">Sign in to Edenn</h1>
+      <h1 className="text-5xl font-preahvihear text-white mb-4 tracking-tight">Sign in to Edenn</h1>
+      <p className="text-white/50 font-dm-sans text-sm mb-10 leading-relaxed max-w-[320px]">
+        Skip the hassle of building from scratch. Get a fully functional AI agent asap
+      </p>
 
       {error && (
-        <div className="error-message">
+        <div className="bg-red-500/10 border border-red-500/30 text-red-500 px-4 py-3 rounded-xl mb-6 text-sm w-full">
           {error}
         </div>
       )}
 
       {!googleClientId && (
-        <div className="warning-message">
-          Google Sign-In is not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your .env.local file.
+        <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 px-4 py-3 rounded-xl mb-6 text-sm w-full">
+          Google Sign-In is not configured.
         </div>
       )}
 
-      <div className="social-buttons">
-        {/* Custom Google Sign-In Button */}
-        {googleClientId ? (
-          <button
-            className="social-button google"
-            onClick={() => {
-              if (window.google && googleScriptLoaded) {
-                window.google.accounts.id.prompt();
-              }
-            }}
-            disabled={isLoading || isAuthenticated}
-          >
-            <GoogleIcon />
-            <span>Sign in with Google</span>
-            {isLoading && <Loader2 className="animate-spin ml-auto" size={18} />}
-          </button>
-        ) : (
-          <button className="social-button disabled" disabled>
-            <GoogleIcon />
-            <span>Google Sign-In not configured</span>
-          </button>
-        )}
-
+      <div className="flex flex-col gap-4 w-full">
+        {/* Google Button */}
         <button
-          className="social-button coming-soon"
+          className="flex items-center justify-center gap-3 w-full py-4 bg-[#111] border border-[#222] hover:bg-[#1A1A1A] hover:border-[#333] transition-all rounded-2xl text-white font-dm-sans font-medium text-sm group"
+          onClick={() => {
+            if (window.google && googleScriptLoaded) {
+              window.google.accounts.id.prompt();
+            }
+          }}
+          disabled={isLoading || isAuthenticated || !googleClientId}
+        >
+          <GoogleIcon />
+          <span>Sign in with Google</span>
+          {isLoading && <Loader2 className="animate-spin ml-auto text-white/50" size={16} />}
+        </button>
+
+        {/* Facebook Button */}
+        <button
+          className="flex items-center justify-center gap-3 w-full py-4 bg-[#111] border border-[#222] hover:bg-[#1A1A1A] hover:border-[#333] transition-all rounded-2xl text-white font-dm-sans font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed group"
           onClick={() => handleUnavailableProvider("Facebook")}
           disabled={isLoading || isAuthenticated}
         >
           <FacebookIcon />
-          <div className="button-text-wrapper">
-            <span>Sign up using Facebook</span>
-            <span className="coming-soon-badge">Coming soon</span>
-          </div>
+          <span>Sign up using Facebook</span>
         </button>
 
+        {/* Apple Button */}
         <button
-          className="social-button coming-soon"
+          className="flex items-center justify-center gap-3 w-full py-4 bg-[#111] border border-[#222] hover:bg-[#1A1A1A] hover:border-[#333] transition-all rounded-2xl text-white font-dm-sans font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed group"
           onClick={() => handleUnavailableProvider("Apple")}
           disabled={isLoading || isAuthenticated}
         >
           <AppleIcon />
-          <div className="button-text-wrapper">
-            <span>Sign up using Apple</span>
-            <span className="coming-soon-badge">Coming soon</span>
-          </div>
+          <span>Sign up using Apple</span>
         </button>
       </div>
-
-      <style jsx>{`
-        .button-text-wrapper {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 2px;
-        }
-
-        .coming-soon-badge {
-          font-size: 10px;
-          text-transform: uppercase;
-          background: rgba(118, 40, 219, 0.2);
-          color: #9b4dff;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-        }
-
-        .social-button.coming-soon {
-          opacity: 0.8;
-        }
-        .sign-in-step {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          width: 100%;
-          max-width: 380px;
-        }
-
-        .auth-success {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(34, 197, 94, 0.1);
-          border: 1px solid rgba(34, 197, 94, 0.3);
-          color: #22c55e;
-          padding: 12px 16px;
-          border-radius: 8px;
-          margin-bottom: 24px;
-          font-size: 14px;
-          width: 100%;
-        }
-
-        .title {
-          font-family: var(--font-preahvihear), serif;
-          font-weight: 400;
-          font-size: 42px;
-          line-height: 1.2;
-          color: #ffffff;
-          margin-bottom: 48px;
-          letter-spacing: -0.5px;
-        }
-
-        .error-message {
-          background: rgba(255, 59, 48, 0.1);
-          border: 1px solid rgba(255, 59, 48, 0.3);
-          color: #ff3b30;
-          padding: 12px 16px;
-          border-radius: 8px;
-          margin-bottom: 24px;
-          font-size: 14px;
-          width: 100%;
-        }
-
-        .warning-message {
-          background: rgba(255, 193, 7, 0.1);
-          border: 1px solid rgba(255, 193, 7, 0.3);
-          color: #ffc107;
-          padding: 12px 16px;
-          border-radius: 8px;
-          margin-bottom: 24px;
-          font-size: 14px;
-          width: 100%;
-        }
-
-        .social-buttons {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          width: 100%;
-        }
-
-        .social-button {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          width: 100%;
-          padding: 16px 24px;
-          background: transparent;
-          border: 1px solid var(--input-border);
-          border-radius: 12px;
-          color: #ffffff;
-          font-family: var(--font-dm-sans), sans-serif;
-          font-size: 16px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .social-button:hover:not(:disabled) {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.3);
-          transform: translateY(-2px);
-        }
-
-        .social-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        @media (max-width: 768px) {
-          .sign-in-step {
-            align-items: center;
-            text-align: center;
-          }
-
-          .title {
-            font-size: 32px;
-            margin-bottom: 32px;
-          }
-
-          .social-button {
-            padding: 14px 20px;
-            font-size: 14px;
-          }
-        }
-      `}</style>
     </div>
   );
 }
