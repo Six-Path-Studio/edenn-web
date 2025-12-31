@@ -88,7 +88,7 @@ export const sendMessage = mutation({
             recipientId: participantId,
             senderId: args.senderId,
             type: "message",
-            relatedId: messageId,
+            relatedId: args.conversationId, // Point to Conversation ID for grouping
           });
         }
       }
@@ -139,7 +139,24 @@ export const getConversations = query({
       conv.participants.some(p => p.toString() === args.userId)
     );
 
-    // Enrich with participant info
+    // Sort by lastMessageAt (newest first)
+    userConversations.sort((a, b) => (b.lastMessageAt || b._creationTime) - (a.lastMessageAt || a._creationTime));
+
+    // Get unread counts
+    const unreadNotifications = await ctx.db
+      .query("notifications")
+      .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId as Id<"users">).eq("read", false))
+      .collect();
+
+    const unreadMap = new Map<string, number>();
+    unreadNotifications.forEach(n => {
+       if (n.type === "message" && n.relatedId) {
+           const count = unreadMap.get(n.relatedId) || 0;
+           unreadMap.set(n.relatedId, count + 1);
+       }
+    });
+
+    // Enrich with participant info & unread count
     return Promise.all(
       userConversations.map(async (conv) => {
         const otherParticipantIds = conv.participants.filter(id => id.toString() !== args.userId);
@@ -152,7 +169,8 @@ export const getConversations = query({
         return { 
           ...conv, 
           otherParticipants: resolvedOtherParticipants.filter(p => p !== null),
-          otherUser: resolvedOtherParticipants[0] || null
+          otherUser: resolvedOtherParticipants[0] || null,
+          unreadCount: unreadMap.get(conv._id) || 0
         };
       })
     );
@@ -179,6 +197,57 @@ export const getOrCreateConversation = mutation({
     return await ctx.db.insert("conversations", {
       participants: [args.currentUserId, args.opponentId],
       createdAt: Date.now(),
+    });
+    return await ctx.db.insert("conversations", {
+      participants: [args.currentUserId, args.opponentId],
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const editMessage = mutation({
+  args: {
+    messageId: v.id("messages"),
+    userId: v.id("users"),
+    text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+    if (message.senderId !== args.userId) throw new Error("Unauthorized");
+
+    await ctx.db.patch(args.messageId, {
+      text: args.text,
+    });
+  },
+});
+
+export const deleteMessage = mutation({
+  args: {
+    messageId: v.id("messages"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    if (!message) return; // Already deleted or not found
+    if (message.senderId !== args.userId) throw new Error("Unauthorized");
+
+    await ctx.db.delete(args.messageId);
+
+    // Update conversation last message if needed
+    // We fetch the *new* last message to keep state consistent
+    const lastMsg = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) => q.eq("conversationId", message.conversationId))
+        .order("desc") // timestamp desc (implicit or by creation time?)
+        // Convex ID sort is creation time. So order("desc") generally works for chronological last.
+        // Wait, "by_conversation" index is just ["conversationId"]. 
+        // We can explicit sort by creation time if we collect, but `order("desc")` on standard query uses system creation time order reversed.
+        .first();
+
+    await ctx.db.patch(message.conversationId, {
+        lastMessage: lastMsg ? lastMsg.text : "",
+        lastMessageAt: lastMsg ? lastMsg.createdAt : undefined, // or keep existing? Better to update.
     });
   },
 });

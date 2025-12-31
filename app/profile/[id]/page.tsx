@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -36,7 +37,7 @@ export default function UserProfilePage() {
 
   const handleFollow = async () => {
     if (!isAuthenticated || !user || !profileUser) {
-        alert("Please login to follow.");
+        toast.error("Please login to follow.");
         return;
     }
     
@@ -44,7 +45,7 @@ export default function UserProfilePage() {
         await toggleFollow({ followerId: user.id as Id<"users">, followingId: profileUser._id });
     } catch (err) {
         console.error("Follow error:", err);
-        alert("Failed to follow.");
+        toast.error("Failed to follow.");
     }
   };
 

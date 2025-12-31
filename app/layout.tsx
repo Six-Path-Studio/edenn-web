@@ -3,6 +3,7 @@ import { Mulish, Preahvihear, DM_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import ConvexClientProvider from "@/components/providers/ConvexClientProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const mulish = Mulish({
@@ -44,6 +45,7 @@ export default function RootLayout({
       >
         <ConvexClientProvider>
           <AuthProvider>
+            <Toaster richColors theme="dark" position="top-center" />
             {children}
           </AuthProvider>
         </ConvexClientProvider>

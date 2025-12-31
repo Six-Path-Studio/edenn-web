@@ -113,7 +113,7 @@ export default function CreatorsPage() {
                  </div>
               </div>
 
-               <div className="bg-[#111111] rounded-[32px] p-6 flex flex-col gap-4 border border-white/5">
+               <div className="bg-transparent rounded-[32px] flex flex-col gap-4">
                 <motion.div 
                   variants={container}
                   initial="hidden"
@@ -121,37 +121,53 @@ export default function CreatorsPage() {
                   viewport={{ once: true, amount: 0.05 }}
                   className="flex flex-col gap-3"
                 >
-                    {creators.map((c, i) => (
-                      <Link href={`/creators/${c._id}`} key={i} className="block w-full">
+                    {creators === undefined ? (
+                        <div className="text-white/50 py-10 text-center">Loading creators...</div>
+                    ) : creators.length === 0 ? (
+                        <div className="text-white/50 py-10 text-center">No creators found.</div>
+                    ) : (
+                        creators.map((c, i) => (
+                      <Link href={`/profile/${c._id}`} key={i} className="block w-full">
                       <motion.div 
                         variants={item}
-                        whileHover={{ x: 10, backgroundColor: "rgba(255,255,255,0.03)", transition: { duration: 0.2 } }}
-                        className="bg-black/20 rounded-[28px] p-4 flex items-center justify-between border border-white/5 hover:border-white/20 transition-all group cursor-pointer"
+                        whileHover={{ x: 6, backgroundColor: "#141414", borderColor: "#7628DB", transition: { duration: 0.2 } }}
+                        className="bg-[#0B0B0B] rounded-[24px] p-5 flex items-center justify-between border border-[#222] transition-all group cursor-pointer shadow-sm"
                       >
-                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 border-2 border-white/5 bg-black">
-                               <Image src={c.avatar || "/images/avatar.png"} alt="Logo" width={56} height={56} className="object-cover w-full h-full" />
+                         <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden shrink-0 border border-[#333]">
+                               <Image 
+                                src={c.avatar || "/images/avatar.png"} 
+                                alt={c.name || "Creator"} 
+                                width={64} 
+                                height={64} 
+                                className="object-cover w-full h-full" 
+                               />
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                               <h3 className="text-white font-black text-lg tracking-tight group-hover:text-[#7628DB] transition-colors">{c.name}</h3>
-                               <span className="text-[#9CA3AF] text-sm font-medium italic opacity-60">@{c.name?.toLowerCase().replace(/\s+/g, '')}</span>
+                            <div className="flex flex-col gap-1">
+                               <h3 className="text-white font-bold text-lg tracking-tight group-hover:text-[#7628DB] transition-colors">{c.name}</h3>
+                               <p className="text-[#888] text-sm line-clamp-1">{c.bio || "No bio available"}</p>
                             </div>
                          </div>
                          
-                         <motion.button 
-                           whileHover={{ scale: 1.1 }}
-                           whileTap={{ scale: 0.9 }}
-                           className="bg-black/40 p-3 rounded-2xl border border-white/5 hover:border-[#7628DB]/30 transition-all"
-                         >
-                           <div className="w-7 h-5 flex border border-white/10 rounded-[3px] overflow-hidden">
-                             <div className="w-1/3 bg-[#008751] h-full" />
-                             <div className="w-1/3 bg-white h-full" />
-                             <div className="w-1/3 bg-[#008751] h-full" />
-                           </div>
-                         </motion.button>
+                         <div className="flex items-center gap-4">
+                             {c.location && (
+                                 <span className="hidden sm:flex items-center gap-1 text-xs text-[#666] bg-[#1A1A1A] px-3 py-1.5 rounded-full border border-[#222]">
+                                     <MapPin size={12} /> {c.location}
+                                 </span>
+                             )}
+                            <motion.button 
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="bg-[#1A1A1A] w-10 h-10 rounded-full border border-[#222] flex items-center justify-center group-hover:border-[#7628DB] group-hover:text-[#7628DB] transition-all"
+                            >
+                                <div className="w-5 h-5 flex items-center justify-center">
+                                    <Triangle className="w-4 h-4 text-white/20 fill-white/20 group-hover:text-[#7628DB] group-hover:fill-[#7628DB] rotate-90" />
+                                </div>
+                            </motion.button>
+                         </div>
                       </motion.div>
                       </Link>
-                    ))}
+                    )))}
                 </motion.div>
                </div>
            </div>

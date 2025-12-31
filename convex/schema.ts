@@ -28,9 +28,13 @@ export default defineSchema({
       emailComments: v.boolean(),
       emailGifts: v.boolean(),
     })),
+    // Upvotes for Profiles (Studios/Creators)
+    upvotes: v.optional(v.number()),
+    upvotedBy: v.optional(v.array(v.id("users"))),
   })
     .index("by_email", ["email"])
-    .index("by_token", ["tokenIdentifier"]),
+    .index("by_token", ["tokenIdentifier"])
+    .index("by_upvotes", ["upvotes"]),
 
   // Games table
   games: defineTable({
@@ -85,7 +89,7 @@ export default defineSchema({
   notifications: defineTable({
     recipientId: v.id("users"),
     senderId: v.optional(v.id("users")), // Who triggered it
-    type: v.union(v.literal("upvote"), v.literal("message"), v.literal("comment"), v.literal("gift"), v.literal("upload"), v.literal("follow")),
+    type: v.union(v.literal("upvote"), v.literal("message"), v.literal("comment"), v.literal("gift"), v.literal("upload"), v.literal("follow"), v.literal("upvote_profile")),
     relatedId: v.optional(v.string()), // ID of game, message, etc.
     read: v.boolean(),
     createdAt: v.number(),

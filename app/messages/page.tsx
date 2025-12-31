@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Image as ImageIcon, Plus, Search, MoreVertical, X } from "lucide-react";
+import { Plus, Search, MoreVertical, X, Paperclip, Triangle, Send, Trash2 } from "lucide-react"; // Added Trash2
+import { SendIcon, GiftIcon, StickerIcon } from "@/components/icons/CustomIcons"; // Added Custom Icons
 import Image from "next/image";
 import { Id } from "@/convex/_generated/dataModel";
 import Navbar from "@/components/landing/Navbar";
@@ -13,13 +15,13 @@ import Navbar from "@/components/landing/Navbar";
 export default function MessagesPage() {
   const { user, isAuthenticated } = useAuth();
   
-  // Only query if user.id is available (and cast to string if needed by backend args, though backend takes string/id)
-  // Backend expects Id<"users"> or string. Let"s pass string for now.
   const conversations = useQuery(api.messages.getConversations, user?.id ? { userId: user.id as string } : "skip") || [];
   const allUsers = useQuery(api.users.getAllUsers) || [];
   
   const [selectedConversationId, setSelectedConversationId] = useState<Id<"conversations"> | null>(null);
   const [messageText, setMessageText] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<Id<"messages"> | null>(null);
+  const [activeDropdownId, setActiveDropdownId] = useState<Id<"messages"> | null>(null);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   
@@ -31,47 +33,62 @@ export default function MessagesPage() {
   );
   
   const sendMessage = useMutation(api.messages.sendMessage);
+  const editMessage = useMutation(api.messages.editMessage); 
+  const deleteMessage = useMutation(api.messages.deleteMessage); // Added delete hook
   const getOrCreateConversation = useMutation(api.messages.getOrCreateConversation);
   const setTypingStatus = useMutation(api.messages.setTypingStatus);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const markMessagesRead = useMutation(api.notifications.markMessagesAsRead);
+  // ... imports
+  const markConversationAsRead = useMutation(api.notifications.markConversationAsRead);
+  
+  // State for sticker picker
+  const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
+
+  // Mark CURRENT conversation as read when selected or messages update
+  useEffect(() => {
+    if (selectedConversationId && user?.id && messages) {
+       markConversationAsRead({ userId: user.id as Id<"users">, conversationId: selectedConversationId });
+    }
+  }, [selectedConversationId, user?.id, messages, markConversationAsRead]);
+  
+  // REMOVED global markMessagesRead on mount
+
+  // ... typing logic ...
+
+  // Handler for adding sticker
+  const addSticker = (sticker: string) => {
+      setMessageText(prev => prev + sticker);
+      setIsStickerPickerOpen(false);
+  };
+
+  const toggleUpvote = useMutation(api.users.toggleUpvoteProfile); 
 
   const selectedConversation = conversations.find(c => c._id === selectedConversationId);
   const otherUser = selectedConversation?.otherUser;
 
-  // Auto-scroll to bottom & Mark Read
+  // Auto-scroll to bottom
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, selectedConversation?.typing]);
-  
-  // Mark messages as read when page loads
-  useEffect(() => {
-    if (user?.id) {
-        markMessagesRead({ userId: user.id as Id<"users"> });
-    }
-  }, [user?.id, markMessagesRead]);
 
   const handleTyping = (text: string) => {
     setMessageText(text);
 
     if (!selectedConversationId || !user?.id) return;
 
-    // Set typing to true
     setTypingStatus({
       conversationId: selectedConversationId,
       userId: user.id as Id<"users">,
       isTyping: true,
     });
 
-    // Clear previous timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Set timeout to clear typing
     typingTimeoutRef.current = setTimeout(() => {
       setTypingStatus({
         conversationId: selectedConversationId,
@@ -87,15 +104,29 @@ export default function MessagesPage() {
 
     const text = messageText;
     setMessageText(""); // Optimistic clear
+    const editingId = editingMessageId;
+    setEditingMessageId(null);
 
     try {
-      await sendMessage({
-        conversationId: selectedConversationId,
-        senderId: user.id as Id<"users">,
-        text,
-      });
+      if (editingId) {
+          await editMessage({
+              messageId: editingId,
+              userId: user.id as Id<"users">,
+              text
+          });
+      } else {
+        await sendMessage({
+            conversationId: selectedConversationId,
+            senderId: user.id as Id<"users">,
+            text,
+        });
+      }
     } catch (err) {
       console.error("Failed to send", err);
+      if (editingId) {
+          setMessageText(text); // Restore if failed
+          setEditingMessageId(editingId);
+      }
     }
   };
 
@@ -110,17 +141,19 @@ export default function MessagesPage() {
         setIsNewChatOpen(false);
      } catch (err) {
         console.error("Failed to create chat", err);
-        alert("Could not create chat");
+        toast.error("Could not create chat");
      }
   };
 
-  // Filter users for new chat (exclude self)
-  // Assuming user context has an ID that matches what's in the DB users table
-  // The useAuth user object might differ from DB object, but usually IDs align if using standard Clerk/Auth0 sync
-  // For safety, we just filter by ignoring the current user's ID if we know it.
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredConversations = conversations.filter(conv => 
+      conv.otherUser?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conv.lastMessage?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const filteredUsers = allUsers.filter(u => 
       u.name?.toLowerCase().includes(userSearch.toLowerCase()) && 
-      // Rudimentary check to exclude self if possible, user.id from useAuth might be string 
       (user?.id ? u._id !== user.id : true)
   );
 
@@ -149,25 +182,29 @@ export default function MessagesPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#727272]" />
               <input 
                 type="text" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search messages..." 
                 className="w-full h-[52px] bg-[#0A0A0A] border border-[#262626] rounded-[26px] pl-12 pr-4 text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#7628DB] transition-all"
-                disabled 
               />
             </div>
           </div>
 
           {/* List */}
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
-             {conversations.length === 0 ? (
+             {filteredConversations.length === 0 ? (
                <div className="text-center text-[#555] mt-10 p-6">
-                 <p className="mb-2">No conversations yet.</p>
+                 <p className="mb-2">No conversations found.</p>
                  <button onClick={() => setIsNewChatOpen(true)} className="text-[#7628DB] text-sm hover:underline">Start a new one</button>
                </div>
             ) : (
-              conversations.map((conv) => {
+              filteredConversations.map((conv) => {
                 const other = conv.otherUser;
                 const isActive = selectedConversationId === conv._id;
                 
+                // Typing detection
+                const isTyping = other && (conv as any).typing && (conv as any).typing[other._id] && (Date.now() - (conv as any).typing[other._id] < 4000);
+
                 return (
                   <div 
                     key={conv._id}
@@ -176,29 +213,42 @@ export default function MessagesPage() {
                         isActive 
                         ? 'bg-[#1A1A1A] border-[#333] shadow-lg' 
                         : 'bg-transparent border border-transparent hover:bg-[#151515]'
-                    } border`}
+                    } border relative`}
                   >
                     <div className="flex items-center gap-4">
-                        <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden bg-[#222] border border-[#333] shrink-0">
-                          <Image 
-                            src={(other?.avatar && (other.avatar.startsWith("http") || other.avatar.startsWith("/"))) ? other.avatar : "/images/avatar.png"} 
-                            alt={other?.name || "User"} 
-                            fill 
-                            className="object-cover" 
-                        />
-                        </div>
+                            <div className="relative w-[52px] h-[52px] rounded-full overflow-hidden bg-[#222] border border-[#333] shrink-0">
+                                <Image 
+                                    src={(other?.avatar && (other.avatar.startsWith("http") || other.avatar.startsWith("/"))) ? other.avatar : "/images/avatar.png"} 
+                                    alt={other?.name || "User"} 
+                                    fill 
+                                    className="object-cover" 
+                                />
+                            </div>
+                        
                         <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                            <h3 className={`font-bold text-[16px] truncate ${isActive ? 'text-white' : 'text-[#DDD]'}`}>
-                            {other?.name || "Unknown User"}
-                            </h3>
-                            <span className="text-xs font-medium text-[#555]">
-                            {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                            </span>
-                        </div>
-                        <p className={`text-[14px] truncate leading-relaxed ${isActive ? 'text-[#AAA]' : 'text-[#666]'}`}>
-                            {conv.lastMessage || "Start chatting"}
-                        </p>
+                          <div className="flex items-center justify-between mb-1">
+                              <h3 className={`font-bold text-[16px] truncate max-w-[140px] ${isActive ? 'text-white' : 'text-[#DDD]'}`}>
+                              {other?.name || "Unknown User"}
+                              </h3>
+                              <span className="text-xs font-medium text-[#555]">
+                              {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                              </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                              <p className={`text-[14px] truncate leading-relaxed flex-1 ${isActive ? 'text-[#AAA]' : 'text-[#666]'}`}>
+                                  {isTyping ? (
+                                      <span className="text-[#4ADE80] font-medium animate-pulse flex items-center gap-1">
+                                          Typing...
+                                      </span>
+                                  ) : (conv.lastMessage || "Start chatting")}
+                              </p>
+                              {/* Unread Bubble - Bottom Right */}
+                              {(conv as any).unreadCount > 0 && (
+                                  <div className="min-w-[20px] h-5 px-1.5 bg-[#7628DB] rounded-full flex items-center justify-center border border-[#111] shrink-0">
+                                      <span className="text-[10px] font-bold text-white">{(conv as any).unreadCount}</span>
+                                  </div>
+                              )}
+                          </div>
                         </div>
                     </div>
                   </div>
@@ -228,7 +278,32 @@ export default function MessagesPage() {
                     <span className="text-sm text-[#555] font-medium">@{otherUser?.name?.toLowerCase().replace(/\s/g, '')}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                   {/* Send Gift */}
+                   <button 
+                     onClick={() => toast.info("Gifting coming soon!")}
+                     className="h-10 px-4 rounded-full border border-[#40A261] text-[#40A261] flex items-center gap-2 hover:bg-[#40A261]/10 transition-colors text-sm font-bold"
+                   >
+                       <GiftIcon />
+                       <span>Send a gift</span>
+                   </button>
+
+                   {/* Upvote */}
+                   <button 
+                     onClick={async () => {
+                         if (!user?.id || !otherUser?._id) return;
+                         await toggleUpvote({ userId: user.id as Id<"users">, targetId: otherUser._id });
+                     }}
+                     className={`h-10 px-4 rounded-full flex items-center gap-2 transition-colors text-sm font-bold ${
+                         otherUser?.upvotedBy?.some((id: any) => id === user?.id)
+                         ? "bg-[#4ADE80] text-black"
+                         : "bg-[#7628DB] text-white hover:bg-[#8a3be8]"
+                     }`}
+                   >
+                       <Triangle className={`w-3 h-3 ${otherUser?.upvotedBy?.some((id: any) => id === user?.id) ? "fill-black" : "fill-white"}`} />
+                       <span>{otherUser?.upvotedBy?.some((id: any) => id === user?.id) ? "Upvoted" : "Upvote"} • {otherUser?.upvotes || 0}</span>
+                   </button>
+                   
                    <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#1A1A1A] transition-colors text-[#777]">
                       <MoreVertical className="w-5 h-5" />
                    </button>
@@ -238,31 +313,106 @@ export default function MessagesPage() {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-8 space-y-6">
                 {messages && messages.length > 0 ? (
-                  messages.map((msg) => {
+                  messages.map((msg, index) => {
                     const isMe = msg.senderId === user?.id;
+                    const nextMsg = messages[index + 1];
+                    const prevMsg = messages[index - 1];
+
+                    const isSameSenderAsNext = nextMsg?.senderId === msg.senderId;
+                    const isSameSenderAsPrev = prevMsg?.senderId === msg.senderId;
                     
+                    // Group if sent within 2 minutes of adjacent message
+                    const isCloseToNext = nextMsg && (nextMsg.createdAt - msg.createdAt < 2 * 60 * 1000);
+                    const isCloseToPrev = prevMsg && (msg.createdAt - prevMsg.createdAt < 2 * 60 * 1000);
+
+                    const showTimestamp = !isSameSenderAsNext || !isCloseToNext;
+                    const isGrouped = isSameSenderAsPrev && isCloseToPrev;
+
                     return (
                       <motion.div 
                         key={msg._id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/message ${isGrouped ? 'mt-[1px]' : 'mt-4'}`}
                       >
                         <div className={`max-w-[65%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                           <div 
-                             className={`px-6 py-4 rounded-[28px] text-[16px] leading-relaxed relative shadow-sm ${
-                               isMe 
-                               // My Message: Purple Gradient
-                                 ? 'bg-gradient-to-br from-[#7628DB] to-[#6020A0] text-white rounded-tr-md' 
-                               // Other Message: Dark Card
-                                 : 'bg-[#1A1A1A] text-[#DDD] border border-[#262626] rounded-tl-md'
-                             }`}
-                           >
-                             {msg.text}
+                           <div className="flex items-center gap-2 relative">
+                               {isMe && (
+                                   <div className="opacity-0 group-hover/message:opacity-100 transition-opacity flex items-center relative">
+                                       <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveDropdownId(activeDropdownId === msg._id ? null : msg._id);
+                                        }}
+                                        className={`p-1.5 rounded-full ${activeDropdownId === msg._id ? 'bg-[#222] text-white' : 'hover:bg-[#222] text-[#666] hover:text-white'} transition-colors`}
+                                       >
+                                           <MoreVertical width="14" height="14" />
+                                       </button>
+                                       
+                                       <AnimatePresence>
+                                       {activeDropdownId === msg._id && (
+                                           <motion.div 
+                                             initial={{ opacity: 0, scale: 0.9 }}
+                                             animate={{ opacity: 1, scale: 1 }}
+                                             exit={{ opacity: 0, scale: 0.9 }}
+                                             className="absolute top-8 right-0 bg-[#1A1A1A] border border-[#262626] rounded-xl shadow-xl z-50 min-w-[120px] overflow-hidden flex flex-col p-1"
+                                           >
+                                               <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingMessageId(msg._id);
+                                                        setMessageText(msg.text);
+                                                        setActiveDropdownId(null);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm text-[#DDD] hover:bg-[#222] hover:text-white rounded-lg flex items-center gap-2 transition-colors"
+                                                >
+                                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                   Edit
+                                                </button>
+                                                <button 
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        try {
+                                                            await deleteMessage({ messageId: msg._id, userId: user.id as Id<"users"> });
+                                                            toast.success("Message deleted");
+                                                        } catch(err) {
+                                                            toast.error("Failed to delete");
+                                                        } finally {
+                                                            setActiveDropdownId(null);
+                                                        }
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm text-red-500 hover:bg-[#2A1111] hover:text-red-400 rounded-lg flex items-center gap-2 transition-colors"
+                                                >
+                                                   <Trash2 width="14" height="14" />
+                                                   Delete
+                                                </button>
+                                           </motion.div>
+                                       )}
+                                       </AnimatePresence>
+                                   </div>
+                               )}
+                               <div 
+                                 className={`px-5 py-3 text-[16px] leading-relaxed relative shadow-sm break-words ${
+                                   isMe 
+                                   // My Message
+                                     ? 'bg-linear-to-br from-[#7628DB] to-[#6020A0] text-white' 
+                                   // Other Message
+                                     : 'bg-[#1A1A1A] text-[#DDD] border border-[#262626]'
+                                 } ${
+                                    // Corner Logic
+                                    isMe 
+                                        ? `rounded-[22px] ${isGrouped ? 'rounded-tr-md' : 'rounded-tr-[22px]'} ${isSameSenderAsNext && isCloseToNext ? 'rounded-br-md' : 'rounded-br-[22px]'}`
+                                        : `rounded-[22px] ${isGrouped ? 'rounded-tl-md' : 'rounded-tl-[22px]'} ${isSameSenderAsNext && isCloseToNext ? 'rounded-bl-md' : 'rounded-bl-[22px]'}`
+                                 }`}
+                               >
+                                 {msg.text}
+                               </div>
                            </div>
-                           <span className="text-[12px] font-medium text-[#444] mt-2 px-2">
-                              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                           </span>
+                           {showTimestamp && (
+                               <span className={`text-[11px] font-medium text-[#444] mt-1 px-2 select-none ${isMe ? 'text-right' : 'text-left'}`}>
+                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                               </span>
+                           )}
                         </div>
                       </motion.div>
                     );
@@ -293,31 +443,63 @@ export default function MessagesPage() {
               </div>
 
               {/* Input Area */}
-              <div className="p-6 bg-[#111] border-t border-[#222]">
-                <div className="bg-[#0A0A0A] border border-[#262626] rounded-[28px] p-2 pr-3 flex items-center gap-3 relative focus-within:border-[#7628DB] focus-within:ring-1 focus-within:ring-[#7628DB]/20 transition-all shadow-inner">
-                  <button className="p-3 text-[#555] hover:text-[#CCC] transition-colors rounded-full hover:bg-[#1A1A1A]">
-                    <Plus className="w-6 h-6" />
-                  </button>
-                  <form onSubmit={handleSend} className="flex-1">
-                    <input 
-                      type="text" 
-                      value={messageText}
-                      onChange={(e) => handleTyping(e.target.value)}
-                      placeholder="Type a message..." 
-                      className="w-full bg-transparent border-none text-white focus:outline-none h-[52px] placeholder-[#444] text-[16px]"
-                    />
-                  </form>
-                  <label className="p-3 text-[#555] hover:text-[#CCC] transition-colors rounded-full hover:bg-[#1A1A1A] cursor-pointer">
-                    <input type="file" className="hidden" onChange={(e) => alert("File upload coming in next update!")} />
-                    <ImageIcon className="w-5 h-5" />
-                  </label>
-                  <button 
-                    onClick={handleSend}
-                    disabled={!messageText.trim()}
-                    className="w-[48px] h-[48px] flex items-center justify-center bg-[#7628DB] text-white rounded-full hover:bg-[#8a3be8] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(118,40,219,0.3)] hover:shadow-[0_6px_20px_rgba(118,40,219,0.4)] transform hover:-translate-y-0.5"
-                  >
-                    <Send className="w-5 h-5 ml-1" />
-                  </button>
+              <div className="p-6 bg-[#070707] border-t border-[#111]">
+                 {editingMessageId && (
+                     <div className="flex items-center justify-between mb-2 text-xs text-[#7628DB] px-4">
+                         <span>Editing message...</span>
+                         <button onClick={() => { setEditingMessageId(null); setMessageText(""); }} className="hover:text-white">Cancel</button>
+                     </div>
+                 )}
+                <div className="flex items-center gap-3">
+                    {/* Paperclip */}
+                    <button className="w-12 h-12 rounded-[16px] bg-[#111] border border-[#222] flex items-center justify-center hover:bg-[#1A1A1A] hover:border-[#333] transition-all shrink-0"
+                            onClick={() => toast.info("File upload coming soon!")}>
+                        <Paperclip className="w-5 h-5 text-[#8AF0C5]" />
+                    </button>
+
+                    {/* Input */}
+                    <div className="flex-1 relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <button 
+                                onClick={() => setIsStickerPickerOpen(!isStickerPickerOpen)}
+                                className="hover:opacity-80 transition-opacity"
+                            >
+                                <StickerIcon />
+                            </button>
+                            
+                            {isStickerPickerOpen && (
+                                <div className="absolute bottom-10 left-0 bg-[#1A1A1A] border border-[#333] rounded-[16px] p-2 grid grid-cols-4 gap-2 w-[160px] shadow-xl z-50">
+                                    {["🔥", "👍", "❤️", "😂", "😮", "🎉", "👋", "👀"].map(emoji => (
+                                        <button 
+                                            key={emoji} 
+                                            onClick={() => addSticker(emoji)}
+                                            className="w-8 h-8 flex items-center justify-center hover:bg-[#333] rounded-md text-xl"
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <form onSubmit={handleSend}>
+                            <input 
+                              type="text" 
+                              value={messageText}
+                              onChange={(e) => handleTyping(e.target.value)}
+                              placeholder="click to type message" 
+                              className="w-full h-[52px] bg-[#111] border border-[#222] rounded-[16px] pl-12 pr-4 text-white text-[15px] placeholder-[#444] focus:outline-none focus:border-[#7628DB] focus:bg-[#151515] transition-all"
+                            />
+                        </form>
+                    </div>
+
+                    {/* Send Button */}
+                    <button 
+                      onClick={handleSend}
+                      disabled={!messageText.trim()}
+                      className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <SendIcon />
+                    </button>
                 </div>
               </div>
             </>

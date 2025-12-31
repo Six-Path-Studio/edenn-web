@@ -9,10 +9,25 @@ export const triggerNotification = internalMutation({
   args: {
     recipientId: v.id("users"),
     senderId: v.optional(v.id("users")),
-    type: v.union(v.literal("upvote"), v.literal("message"), v.literal("comment"), v.literal("gift"), v.literal("upload"), v.literal("follow")), // Added 'follow'
+    type: v.union(v.literal("upvote"), v.literal("message"), v.literal("comment"), v.literal("gift"), v.literal("upload"), v.literal("follow"), v.literal("upvote_profile")), // Added 'upvote_profile'
     relatedId: v.optional(v.string()), // ID of game, message, etc.
   },
   handler: async (ctx, args) => {
+    // 0. Email Debounce Check (BEFORE Insertion)
+    let shouldDebounceEmail = false;
+    if (args.type === "message" && args.senderId) {
+        const lastMessage = await ctx.db
+            .query("notifications")
+            .withIndex("by_recipient", (q) => q.eq("recipientId", args.recipientId))
+            .filter((q) => q.and(q.eq(q.field("type"), "message"), q.eq(q.field("senderId"), args.senderId)))
+            .order("desc")
+            .first();
+
+        if (lastMessage && (Date.now() - lastMessage.createdAt < 15 * 60 * 1000)) {
+             shouldDebounceEmail = true;
+        }
+    }
+
     // 1. Insert DB Notification
     await ctx.db.insert("notifications", {
         recipientId: args.recipientId,
@@ -52,8 +67,14 @@ export const triggerNotification = internalMutation({
                 subject = `${senderName} upvoted your game`;
             }
             break;
+        case "upvote_profile":
+             if (prefs.emailUpvotes) {
+                 shouldSendEmail = true;
+                 subject = `${senderName} upvoted your profile`;
+             }
+             break;
         case "message":
-            if (prefs.emailMessages) {
+            if (prefs.emailMessages && !shouldDebounceEmail) {
                 shouldSendEmail = true;
                 subject = `New message from ${senderName}`;
             }
@@ -172,7 +193,24 @@ export const markMessagesAsRead = mutation({
        
        const messageNotifications = unread.filter(n => n.type === "message");
        
+       
        await Promise.all(messageNotifications.map(n => ctx.db.patch(n._id, { read: true })));
+    }
+});
+
+// Mark messages specifically for a conversation as read
+export const markConversationAsRead = mutation({
+    args: { userId: v.id("users"), conversationId: v.id("conversations") },
+    handler: async (ctx, args) => {
+        const unread = await ctx.db
+            .query("notifications")
+            .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId).eq("read", false))
+            .collect();
+
+        // Filter for messages related to this conversation
+        const targetNotifications = unread.filter(n => n.type === "message" && n.relatedId === args.conversationId);
+
+        await Promise.all(targetNotifications.map(n => ctx.db.patch(n._id, { read: true })));
     }
 });
 
@@ -220,8 +258,10 @@ export const getUnreadMessageCount = query({
             .withIndex("by_recipient_unread", (q) => q.eq("recipientId", targetId).eq("read", false))
             .collect();
             
-        // Filter for type 'message'
-        return unread.filter(n => n.type === "message").length;
+        // Filter for type 'message' and count unique relatedIds (conversations)
+        const messageNotifications = unread.filter(n => n.type === "message" && n.relatedId);
+        const uniqueConversations = new Set(messageNotifications.map(n => n.relatedId));
+        return uniqueConversations.size;
     },
 });
 
@@ -253,4 +293,19 @@ export const getUnreadNotificationCount = query({
         // Also maybe filter out 'upload' if we don't want badges for that
         return unread.filter(n => n.type !== "message").length;
     },
+});
+
+export const markNotificationsAsRead = mutation({
+    args: { userId: v.id("users") },
+    handler: async (ctx, args) => {
+       const unread = await ctx.db
+         .query("notifications")
+         .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId).eq("read", false))
+         .collect();
+       
+       // Mark everything EXCEPT messages as read.
+       const generalNotifications = unread.filter(n => n.type !== "message");
+       
+       await Promise.all(generalNotifications.map(n => ctx.db.patch(n._id, { read: true })));
+    }
 });

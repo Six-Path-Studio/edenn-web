@@ -9,7 +9,7 @@ import LogoutModal from "@/components/ui/LogoutModal";
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/components/providers/AuthProvider";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 interface NavbarProps {
@@ -42,6 +42,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
   const activeNotifications = useQuery(api.notifications.getNotifications, user?.id ? { userId: user.id } : "skip") || [];
   const unreadMessageCount = useQuery(api.notifications.getUnreadMessageCount, user?.id ? { userId: user.id } : "skip") || 0;
   const unreadNotificationCount = useQuery(api.notifications.getUnreadNotificationCount, user?.id ? { userId: user.id } : "skip") || 0;
+  const markNotificationsAsRead = useMutation(api.notifications.markNotificationsAsRead);
   
   // Helper to validate image URLs
   const getValidImageUrl = (url: string | undefined, fallback: string): string => {
@@ -172,7 +173,16 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-[#222]">
                           <span className="text-white text-lg font-medium">Notification</span>
-                          <Link href="#" className="text-white text-md hover:underline">See all</Link>
+                          <button 
+                            onClick={async () => {
+                                if (user?.id) {
+                                    await markNotificationsAsRead({ userId: user.id as any });
+                                }
+                            }}
+                            className="text-[#7628DB] text-sm hover:text-white transition-colors font-medium"
+                          >
+                            Mark as read
+                          </button>
                         </div>
                         
                         {/* List */}

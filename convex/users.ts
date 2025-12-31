@@ -326,3 +326,42 @@ export const isFollowing = query({
     return !!follow;
   },
 });
+
+export const toggleUpvoteProfile = mutation({
+  args: {
+    userId: v.id("users"), // The user doing the upvoting (or from auth)
+    targetId: v.id("users"), // The profile being upvoted
+  },
+  handler: async (ctx, args) => {
+    const targetUser = await ctx.db.get(args.targetId);
+    if (!targetUser) throw new Error("User not found");
+
+    const upvotedBy = targetUser.upvotedBy || [];
+    const hasUpvoted = upvotedBy.includes(args.userId);
+
+    let newUpvotedBy;
+    let newUpvotes = targetUser.upvotes || 0;
+
+    if (hasUpvoted) {
+      newUpvotedBy = upvotedBy.filter((id) => id !== args.userId);
+      newUpvotes = Math.max(0, newUpvotes - 1);
+    } else {
+      newUpvotedBy = [...upvotedBy, args.userId];
+      newUpvotes = newUpvotes + 1;
+
+        // Trigger Notification
+        await ctx.scheduler.runAfter(0, internal.notifications.triggerNotification, {
+            recipientId: args.targetId,
+            senderId: args.userId,
+            type: "upvote_profile",
+        });
+    }
+
+    await ctx.db.patch(args.targetId, {
+      upvotedBy: newUpvotedBy,
+      upvotes: newUpvotes,
+    });
+
+    return { upvoted: !hasUpvoted, count: newUpvotes };
+  },
+});
