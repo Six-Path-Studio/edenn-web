@@ -21,6 +21,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
   const { user, isAuthenticated, signOut } = useAuth();
   const [activeDropdown, setActiveDropdown] = useState<"home" | "user" | "notifications" | null>(null);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Fetch user data from Convex
   const dbUser = useQuery(
@@ -60,9 +61,20 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
   };
 
   useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-trigger')) {
+      if (!target.closest('.dropdown-trigger') && !target.closest('.mobile-menu')) {
         setActiveDropdown(null);
       }
     };
@@ -78,6 +90,8 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
     };
   }, [activeDropdown]);
 
+
+
   // Helper for active class
   const getLinkClass = (path: string) => {
     return pathname === path 
@@ -85,12 +99,20 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
       : "text-text-secondary hover:text-white transition-colors text-sm font-medium";
   };
 
+  const mobileLinkClass = (path: string) => {
+     return pathname === path
+      ? "text-white text-2xl font-bold"
+      : "text-text-secondary hover:text-white text-2xl font-bold transition-colors";
+  };
+
+
+
   return (
-      <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center pt-6 px-4 pointer-events-none">
-      <Container className="flex items-center justify-between py-4 relative pointer-events-auto">
+      <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4 pointer-events-none">
+      <Container className="flex items-center justify-between py-4 relative pointer-events-auto z-[101]">
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer">
-          <Link href="/">
+        <div className="flex items-center gap-2 cursor-pointer relative z-[102]">
+          <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
             <Image 
               src="/images/edenn.svg" 
               alt="Edenn Logo" 
@@ -120,7 +142,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                 <Link href="#" className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
                   Blog
                 </Link>
-                <Link href="#" className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
+                <Link href="/contact" className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
                   Contact Us
                 </Link>
               </div>
@@ -148,8 +170,8 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
           </div>
         </div>
 
-        {/* Right Side */}
-        <div className="flex items-center gap-4">
+        {/* Right Side Desktop */}
+        <div className="hidden md:flex items-center gap-4">
           {(isLoggedIn || isAuthenticated) ? (
             <>
               {/* Icons */}
@@ -316,7 +338,125 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
             </>
           )}
         </div>
+
+        {/* Mobile Menu Toggle */}
+        <div className="flex items-center gap-4 md:hidden relative z-[102]">
+           {(isLoggedIn || isAuthenticated) && (
+              <div className="flex items-center gap-2">
+                 <Link href="/messages" className="p-2 text-white relative">
+                      <MessageSquare className="w-5 h-5" />
+                      {unreadMessageCount > 0 && (
+                        <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-3 h-3 flex items-center justify-center rounded-full">
+                          {unreadMessageCount}
+                        </span>
+                      )}
+                  </Link>
+                  <Link href="/notifications" className="p-2 text-white relative">
+                      <Bell className="w-5 h-5" />
+                      {unreadNotificationCount > 0 && (
+                         <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-3 h-3 flex items-center justify-center rounded-full">
+                           {unreadNotificationCount}
+                         </span>
+                      )}
+                  </Link>
+              </div>
+           )}
+           <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="text-white p-2"
+           >
+             {isMobileMenuOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+             ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+             )}
+           </button>
+        </div>
+
       </Container>
+      
+      {/* Mobile Menu Overlay */}
+      <div 
+        className={`fixed inset-0 bg-[#0A0A0A] z-40 transition-all duration-300 ease-in-out md:hidden flex flex-col pt-24 px-6 ${
+          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+          <div className="flex flex-col gap-6 mt-8">
+              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className={mobileLinkClass("/")}>
+                Home
+              </Link>
+              <Link href="/studios" onClick={() => setIsMobileMenuOpen(false)} className={mobileLinkClass("/studios")}>
+                Studios
+              </Link>
+              <Link href="/games" onClick={() => setIsMobileMenuOpen(false)} className={mobileLinkClass("/games")}>
+                Games
+              </Link>
+              <Link href="/creators" onClick={() => setIsMobileMenuOpen(false)} className={mobileLinkClass("/creators")}>
+                Creators
+              </Link>
+              
+              <div className="h-px bg-[#222] w-full my-2"></div>
+              
+              <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="text-[#a1a1aa] text-lg font-medium">
+                  Company
+              </Link>
+              <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="text-[#a1a1aa] text-lg font-medium">
+                  Blog
+              </Link>
+              <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="text-[#a1a1aa] text-lg font-medium">
+                  Contact Us
+              </Link>
+
+              <div className="h-px bg-[#222] w-full my-2"></div>
+
+              {(isLoggedIn || isAuthenticated) ? (
+                  <div className="flex flex-col gap-4">
+                     <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 relative">
+                            <Image 
+                              src={avatarUrl} 
+                              alt="User" 
+                              fill 
+                              className="object-cover"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-white font-medium">{displayName}</span>
+                            <span className="text-white/50 text-xs">{user?.email}</span>
+                        </div>
+                     </div>
+                     <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
+                        Profile
+                     </Link>
+                     <Link href="/upload-game" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
+                        Upload Game
+                     </Link>
+                     <Link href="/settings" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
+                        Settings
+                     </Link>
+                     <button 
+                       onClick={() => {
+                           setIsMobileMenuOpen(false);
+                           setIsLogoutModalOpen(true);
+                       }} 
+                       className="text-red-500 text-lg font-medium text-left"
+                     >
+                        Logout
+                     </button>
+                  </div>
+              ) : (
+                  <div className="flex flex-col gap-4">
+                      <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
+                        Sign In
+                      </Link>
+                      <Link href="/onboarding" onClick={() => setIsMobileMenuOpen(false)} className="bg-primary text-white text-center py-3 rounded-full font-medium">
+                        Get Started
+                      </Link>
+                  </div>
+              )}
+          </div>
+      </div>
+
       <LogoutModal 
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
