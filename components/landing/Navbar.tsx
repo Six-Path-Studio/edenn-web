@@ -302,7 +302,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                     />
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium text-white">{displayName}</span>
+                    <span className="text-sm font-medium text-white truncate max-w-[100px]" title={displayName}>{displayName}</span>
                     <ChevronDown className={`w-4 h-4 text-text-secondary transition-transform ${activeDropdown === 'user' ? 'rotate-180' : ''}`} />
                   </div>
                 </div>

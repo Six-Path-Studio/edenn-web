@@ -553,6 +553,7 @@ function MessagesContent() {
                                                 <button 
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
+                                                        if (!user?.id) return;
                                                         try {
                                                             await deleteMessage({ messageId: msg._id, userId: user.id as Id<"users"> });
                                                             toast.success("Message deleted");
