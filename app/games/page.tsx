@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/landing/Navbar";
 import { DirectoryHeader } from "@/components/directory/DirectoryHeader";
 import { DirectoryFilters } from "@/components/directory/DirectoryFilters";
 import { GameCard } from "@/components/directory/GameCard";
@@ -39,8 +38,7 @@ export default function GamesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white overflow-hidden">
-      <Navbar isLoggedIn={true} />
+    <main className="min-h-screen bg-black text-white overflow-hidden pt-24">
       
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <DirectoryHeader 

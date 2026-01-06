@@ -17,9 +17,11 @@ export function CreatorSidebarCard({ name, tags, upvotes }: CreatorSidebarCardPr
             {/* Generic initials or logo */}
             <span className="text-black font-black text-xs">HG</span>
          </div>
-         <div className="flex flex-col">
-            <h3 className="text-white font-bold text-sm tracking-tight">{name}</h3>
-            <span className="text-white/40 text-[10px] font-medium">#Artist #Gamedeveloper</span>
+         <div className="flex flex-col min-w-0">
+            <h3 className="text-white font-bold text-sm tracking-tight truncate">{name}</h3>
+            <span className="text-white/40 text-[10px] font-medium truncate">
+                {tags && tags.length > 0 ? tags.map(t => `#${t.replace(/\s+/g, '')}`).join(" ") : "#Creator #Gaming"}
+            </span>
          </div>
       </div>
       

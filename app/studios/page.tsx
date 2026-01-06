@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import Navbar from "@/components/landing/Navbar";
 import { DirectoryHeader } from "@/components/directory/DirectoryHeader";
 import { DirectoryFilters } from "@/components/directory/DirectoryFilters";
 import { Plus, Triangle, Search } from "lucide-react";
@@ -48,8 +47,7 @@ export default function StudiosPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white overflow-hidden">
-      <Navbar isLoggedIn={true} />
+    <main className="min-h-screen bg-black text-white pt-10">
       
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <DirectoryHeader 
@@ -64,8 +62,7 @@ export default function StudiosPage() {
         <motion.div 
             variants={container}
             initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.05 }}
+            animate="show"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {isLoading ? (

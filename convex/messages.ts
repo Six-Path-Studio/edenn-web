@@ -37,9 +37,23 @@ export const getMessages = query({
     const resolvedSenders = await Promise.all(senders.map(s => resolveUser(ctx, s)));
     const senderMap = new Map(resolvedSenders.map(s => [s?._id, s]));
 
-    return messages.map((msg) => ({
-      ...msg,
-      sender: senderMap.get(msg.senderId)
+    return Promise.all(messages.map(async (msg) => {
+      let imageUrl = undefined;
+      let attachmentUrl = undefined;
+      
+      if (msg.imageUrl) {
+        imageUrl = await ctx.storage.getUrl(msg.imageUrl);
+      }
+      if (msg.attachmentUrl) {
+        attachmentUrl = await ctx.storage.getUrl(msg.attachmentUrl);
+      }
+
+      return {
+        ...msg,
+        sender: senderMap.get(msg.senderId),
+        imageUrl,
+        attachmentUrl,
+      };
     }));
   },
 });
@@ -50,16 +64,25 @@ export const sendMessage = mutation({
     conversationId: v.id("conversations"),
     senderId: v.id("users"),
     text: v.string(),
+    imageUrl: v.optional(v.id("_storage")),
+    attachmentUrl: v.optional(v.id("_storage")),
+    attachmentName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Validate sender exists
     const user = await ctx.db.get(args.senderId);
     if (!user) throw new Error("User not found");
+    
+    // Determine preview text for conversation
+    const displayMessage = args.text || (args.imageUrl ? "Sent an image" : args.attachmentName ? `Sent: ${args.attachmentName}` : "New message");
 
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       senderId: args.senderId,
       text: args.text,
+      imageUrl: args.imageUrl,
+      attachmentUrl: args.attachmentUrl,
+      attachmentName: args.attachmentName,
       createdAt: Date.now(),
     });
 
@@ -71,7 +94,7 @@ export const sendMessage = mutation({
     }
 
     await ctx.db.patch(args.conversationId, {
-      lastMessage: args.text,
+      lastMessage: displayMessage,
       lastMessageAt: Date.now(),
       typing,
     });
@@ -251,3 +274,4 @@ export const deleteMessage = mutation({
     });
   },
 });
+

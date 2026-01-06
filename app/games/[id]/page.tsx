@@ -9,7 +9,6 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useState } from "react";
-import Navbar from "@/components/landing/Navbar";
 import Container from "@/components/ui/Container";
 import { useAuth } from "@/components/providers/AuthProvider";
 
@@ -163,8 +162,7 @@ export default function GameProfilePage() {
   const isUpvoted = currentUser && game.upvotedBy?.includes(currentUser._id);
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <Navbar />
+    <main className="min-h-screen bg-background text-foreground pt-24">
 
       <Container className="pt-24 pb-20">
         {/* Game Header */}

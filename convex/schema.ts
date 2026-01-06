@@ -89,6 +89,9 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     senderId: v.id("users"),
     text: v.string(),
+    imageUrl: v.optional(v.id("_storage")),
+    attachmentUrl: v.optional(v.id("_storage")),
+    attachmentName: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_conversation", ["conversationId"]),

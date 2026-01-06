@@ -1,6 +1,5 @@
 "use client";
 
-import Navbar from "@/components/landing/Navbar";
 import { DirectoryHeader } from "@/components/directory/DirectoryHeader";
 import { DirectoryFilters } from "@/components/directory/DirectoryFilters";
 import { Search, MapPin, LayoutGrid, Triangle } from "lucide-react";
@@ -57,8 +56,7 @@ export default function CreatorsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white text-balance">
-      <Navbar isLoggedIn={true} />
+    <main className="min-h-screen bg-black text-white text-balance pt-24">
       
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         {/* Header */}
@@ -73,7 +71,7 @@ export default function CreatorsPage() {
             <p className="text-white/60 max-w-2xl text-sm md:text-base font-light leading-relaxed">
             Connect with world-class game development studios, indie creators, and gaming professionals. Find services, hire talent, or showcase your portfolio.
             </p>
-             <div className="w-full max-w-2xl bg-[#111111] border border-[#222222] rounded-[24px] px-6 py-4 flex items-center gap-3 group focus-within:border-[#7628DB]/30 transition-all">
+             <div className="w-full max-w-2xl bg-[#111111] border border-[#222222] rounded-[24px] px-4 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 group focus-within:border-[#7628DB]/30 transition-all">
               <input 
                 type="text" 
                 placeholder="Search"
@@ -89,26 +87,24 @@ export default function CreatorsPage() {
            {/* Left: Creator List */}
            <div className="lg:col-span-8">
               {/* List Header */}
-              <div className="bg-transparent px-4 flex items-center justify-between mb-8">
+              <div className="bg-transparent px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-[12px] flex items-center justify-center shadow-sm">
-                       <svg className="w-6 h-6 text-[#4ade80]" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                       </svg>
+                    <div className="w-10 h-10 bg-[#4ade80]/10 border border-[#4ade80]/20 rounded-[12px] flex items-center justify-center shadow-sm">
+                       <Triangle className="w-5 h-5 text-[#4ade80] fill-[#4ade80]" />
                     </div>
-                    <span className="text-white font-bold text-xl tracking-tight">Creators</span>
+                    <span className="text-white font-bold text-xl tracking-tight">Browse creators</span>
                  </div>
                  
-                 <div className="flex items-center gap-4">
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#111111] border border-[#222222] hover:bg-[#1a1a1a] transition-colors text-white/80 text-sm font-medium">
+                 <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#111111] border border-[#222222] hover:bg-[#1a1a1a] transition-colors text-white/80 text-xs font-bold whitespace-nowrap">
                       <MapPin className="w-4 h-4 text-[#eab308]" />
                       Location
                     </motion.button>
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#111111] border border-[#222222] hover:bg-[#1a1a1a] transition-colors text-white/80 text-sm font-medium">
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#111111] border border-[#222222] hover:bg-[#1a1a1a] transition-colors text-white/80 text-xs font-bold whitespace-nowrap">
                       <LayoutGrid className="w-4 h-4 text-[#f87171]" />
                       Genre
                     </motion.button>
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#111111] border border-[#222222] hover:bg-[#1a1a1a] transition-colors text-white/80 text-sm font-medium">
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#111111] border border-[#222222] hover:bg-[#1a1a1a] transition-colors text-white/80 text-xs font-bold whitespace-nowrap">
                       <Triangle className="w-4 h-4 fill-[#4ade80] text-[#4ade80]" />
                       Upvote
                     </motion.button>
@@ -144,7 +140,7 @@ export default function CreatorsPage() {
                         whileHover={{ x: 6, backgroundColor: "#141414", borderColor: "#7628DB", transition: { duration: 0.2 } }}
                         className="bg-[#0B0B0B] rounded-[24px] p-5 flex items-center justify-between border border-[#222] transition-all group cursor-pointer shadow-sm"
                       >
-                         <div className="flex items-center gap-5">
+                         <div className="flex items-center gap-5 min-w-0 flex-1">
                             <div className="w-16 h-16 rounded-full bg-black flex items-center justify-center overflow-hidden shrink-0 border border-[#333]">
                                <Image 
                                 src={c.avatar || "/images/avatar.png"} 
@@ -154,13 +150,13 @@ export default function CreatorsPage() {
                                 className="object-cover w-full h-full" 
                                />
                             </div>
-                            <div className="flex flex-col gap-1">
-                               <h3 className="text-white font-bold text-lg tracking-tight group-hover:text-[#7628DB] transition-colors">{c.name}</h3>
-                               <p className="text-[#888] text-sm line-clamp-1">{c.bio || "No bio available"}</p>
+                            <div className="flex flex-col gap-1 min-w-0 flex-1 overflow-hidden">
+                               <h3 className="text-white font-bold text-lg tracking-tight group-hover:text-[#7628DB] transition-colors truncate">{c.name}</h3>
+                               <p className="text-[#888] text-sm truncate">{c.bio || "No bio available"}</p>
                             </div>
                          </div>
                          
-                         <div className="flex items-center gap-4">
+                         <div className="flex items-center gap-4 shrink-0">
                              {c.location && (
                                  <span className="hidden sm:flex items-center gap-1 text-xs text-[#666] bg-[#1A1A1A] px-3 py-1.5 rounded-full border border-[#222]">
                                      <MapPin size={12} /> {c.location}

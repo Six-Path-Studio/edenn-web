@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Container from "@/components/ui/Container";
 import LogoutModal from "@/components/ui/LogoutModal";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useQuery, useMutation } from "convex/react";
@@ -22,6 +22,16 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
   const [activeDropdown, setActiveDropdown] = useState<"home" | "user" | "notifications" | null>(null);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Handle scroll for glassmorphism
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Fetch user data from Convex
   const dbUser = useQuery(
@@ -58,28 +68,21 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
 
   const toggleDropdown = (name: "home" | "user" | "notifications") => {
     setActiveDropdown(prev => prev === name ? null : name);
+    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
   };
 
-  useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isMobileMenuOpen]);
+  // Scroll lock removed for floating menu style
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-trigger') && !target.closest('.mobile-menu')) {
+      if (!target.closest('.dropdown-trigger') && !target.closest('.mobile-menu') && !target.closest('.mobile-menu-toggle')) {
         setActiveDropdown(null);
+        setIsMobileMenuOpen(false);
       }
     };
 
-    if (activeDropdown) {
+    if (activeDropdown || isMobileMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -88,7 +91,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [activeDropdown]);
+  }, [activeDropdown, isMobileMenuOpen]);
 
 
 
@@ -101,17 +104,19 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
 
   const mobileLinkClass = (path: string) => {
      return pathname === path
-      ? "text-white text-2xl font-bold"
-      : "text-text-secondary hover:text-white text-2xl font-bold transition-colors";
+      ? "text-white text-lg font-bold"
+      : "text-text-secondary hover:text-white text-lg font-bold transition-colors";
   };
 
-
-
   return (
-      <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4 pointer-events-none">
-      <Container className="flex items-center justify-between py-4 relative pointer-events-auto z-[101]">
+      <div className={`fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4 pointer-events-none transition-all duration-300 ${scrolled ? 'pt-2' : 'pt-6'}`}>
+      <Container className={`flex items-center justify-between py-4 relative pointer-events-auto z-101 transition-all duration-300 rounded-[32px] ${
+        scrolled 
+          ? 'bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] px-6' 
+          : 'bg-transparent border-transparent px-4'
+      }`}>
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer relative z-[102]">
+        <div className="flex items-center gap-2 cursor-pointer relative z-102">
           <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
             <Image 
               src="/images/edenn.svg" 
@@ -327,7 +332,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
           ) : (
             <>
               {/* Sign In Link */}
-              <Link href="#" className="text-white text-sm font-medium hover:text-white/80 transition-colors">
+              <Link href="/signin" className="text-white text-sm font-medium hover:text-white/80 transition-colors">
                 Sign in
               </Link>
 
@@ -340,7 +345,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
         </div>
 
         {/* Mobile Menu Toggle */}
-        <div className="flex items-center gap-4 md:hidden relative z-[102]">
+        <div className="flex items-center gap-4 md:hidden relative z-102">
            {(isLoggedIn || isAuthenticated) && (
               <div className="flex items-center gap-2">
                  <Link href="/messages" className="p-2 text-white relative">
@@ -351,19 +356,107 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                         </span>
                       )}
                   </Link>
-                  <Link href="/notifications" className="p-2 text-white relative">
-                      <Bell className="w-5 h-5" />
-                      {unreadNotificationCount > 0 && (
-                         <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-3 h-3 flex items-center justify-center rounded-full">
-                           {unreadNotificationCount}
-                         </span>
-                      )}
-                  </Link>
+                  <div className="relative dropdown-trigger">
+                    <button 
+                        onClick={() => toggleDropdown("notifications")}
+                        className="p-2 text-white relative"
+                    >
+                        <Bell className="w-5 h-5" />
+                        {unreadNotificationCount > 0 && (
+                            <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold w-3 h-3 flex items-center justify-center rounded-full">
+                            {unreadNotificationCount}
+                            </span>
+                        )}
+                    </button>
+                    {/* Mobile Notification Dropdown */}
+                    {activeDropdown === "notifications" && (
+                         <div className="absolute top-full right-0 mt-4 w-[280px] xs:w-[320px] bg-[#111111] border border-[#222] rounded-[24px] overflow-hidden shadow-2xl z-200 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="flex items-center justify-between px-5 py-4 border-b border-[#222]">
+                                    <span className="text-white text-base font-medium">Notifications</span>
+                                    <button 
+                                        onClick={async () => {
+                                            if (user?.id) {
+                                                await markNotificationsAsRead({ userId: user.id as any });
+                                            }
+                                        }}
+                                        className="text-[#7628DB] text-xs hover:text-white transition-colors font-medium"
+                                    >
+                                        Mark all read
+                                    </button>
+                                </div>
+                                <div className="flex flex-col max-h-[300px] overflow-y-auto">
+                                    {activeNotifications.length === 0 ? (
+                                        <div className="px-6 py-8 text-center text-gray-500 text-sm">No new notifications</div>
+                                    ) : (
+                                        activeNotifications.map((notif: any, i: number) => (
+                                        <div key={i} className="flex gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-[#222]/50 last:border-0 cursor-pointer text-left">
+                                            <div className="shrink-0 mt-1">
+                                                {notif.type === 'upvote' && <div className="w-4 h-4 text-[#4ADE80]"><svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M12 4L4 20H20L12 4Z" /></svg></div>}
+                                                {notif.type === 'upload' && <div className="w-5 h-5 text-[#A855F7] bg-[#A855F7]/10 p-1 rounded-full flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>}
+                                                {notif.type === 'follow' && <div className="w-5 h-5 text-[#3B82F6] bg-[#3B82F6]/10 p-1 rounded-full flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>}
+                                                {!['upvote', 'upload', 'follow'].includes(notif.type) && <div className="w-4 h-4 text-gray-400"><Bell className="w-full h-full" /></div>}
+                                            </div>
+                                            <div className="flex flex-col gap-0.5 min-w-0">
+                                                <p className="text-[#D4D4D4] text-[13px] leading-snug line-clamp-2">
+                                                    {notif.type === 'upvote' && <><span className="text-white font-medium">{notif.sender?.name || "Someone"}</span> upvoted you</>}
+                                                    {notif.type === 'upload' && <><span className="text-white font-medium">Your Game</span> uploaded</>}
+                                                    {notif.type === 'follow' && <><span className="text-white font-medium">{notif.sender?.name || "Someone"}</span> followed you</>}
+                                                    {!['upvote', 'upload', 'follow'].includes(notif.type) && <span>New notification</span>}
+                                                </p>
+                                                <span className="text-[#525252] text-[10px]">{new Date(notif.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                            </div>
+                                        </div>
+                                        ))
+                                    )}
+                                </div>
+                         </div>
+                    )}
+                  </div>
+
+                  {/* Mobile Avatar Dropdown */}
+                  <div className="relative dropdown-trigger">
+                    <button 
+                        onClick={() => toggleDropdown("user")}
+                        className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20 ml-1 block"
+                    >
+                        <Image 
+                            src={avatarUrl} 
+                            alt="User" 
+                            fill 
+                            className="object-cover"
+                        />
+                    </button>
+                    {activeDropdown === "user" && (
+                         <div className="absolute top-full right-0 mt-4 w-[200px] bg-[#111111] border border-[#222] rounded-[24px] p-2 flex flex-col shadow-2xl z-200 animate-in fade-in zoom-in-95 duration-200">
+                            <Link href="/upload-game" onClick={() => setActiveDropdown(null)} className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
+                            Upload
+                            </Link>
+                            <Link href="/profile" onClick={() => setActiveDropdown(null)} className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
+                            Profile
+                            </Link>
+                            <Link href="/settings" onClick={() => setActiveDropdown(null)} className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
+                            Settings
+                            </Link>
+                            <button 
+                            onClick={() => {
+                                setActiveDropdown(null);
+                                setIsLogoutModalOpen(true);
+                            }}
+                            className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors text-left w-full"
+                            >
+                            Logout
+                            </button>
+                        </div>
+                    )}
+                  </div>
               </div>
            )}
            <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="text-white p-2"
+            onClick={() => {
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+                setActiveDropdown(null);
+            }}
+            className="text-white p-2 mobile-menu-toggle"
            >
              {isMobileMenuOpen ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -375,13 +468,15 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
 
       </Container>
       
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu - Floating Purplish Glassmorphism */}
       <div 
-        className={`fixed inset-0 bg-[#0A0A0A] z-40 transition-all duration-300 ease-in-out md:hidden flex flex-col pt-24 px-6 ${
-          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed top-[100px] left-4 right-4 z-40 transition-all duration-300 ease-out md:hidden flex flex-col p-6 rounded-[32px] border border-purple-500/20 bg-[#0f0a1ac0] backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_20px_rgba(118,40,219,0.15)] mobile-menu ${
+          isMobileMenuOpen 
+            ? 'opacity-100 translate-y-0 pointer-events-auto' 
+            : 'opacity-0 -translate-y-4 pointer-events-none'
         }`}
       >
-          <div className="flex flex-col gap-6 mt-8">
+          <div className="flex flex-col gap-5">
               <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className={mobileLinkClass("/")}>
                 Home
               </Link>
@@ -425,28 +520,10 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                             <span className="text-white/50 text-xs">{user?.email}</span>
                         </div>
                      </div>
-                     <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
-                        Profile
-                     </Link>
-                     <Link href="/upload-game" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
-                        Upload Game
-                     </Link>
-                     <Link href="/settings" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
-                        Settings
-                     </Link>
-                     <button 
-                       onClick={() => {
-                           setIsMobileMenuOpen(false);
-                           setIsLogoutModalOpen(true);
-                       }} 
-                       className="text-red-500 text-lg font-medium text-left"
-                     >
-                        Logout
-                     </button>
                   </div>
               ) : (
                   <div className="flex flex-col gap-4">
-                      <Link href="#" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
+                      <Link href="/signin" onClick={() => setIsMobileMenuOpen(false)} className="text-white text-lg font-medium">
                         Sign In
                       </Link>
                       <Link href="/onboarding" onClick={() => setIsMobileMenuOpen(false)} className="bg-primary text-white text-center py-3 rounded-full font-medium">
@@ -456,14 +533,15 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
               )}
           </div>
       </div>
-
+      
       <LogoutModal 
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={() => {
           setIsLogoutModalOpen(false);
           signOut();
-          window.location.reload();
+          // Use window.location.href for a full fresh state reset on home page
+          window.location.href = "/";
         }}
       />
     </div>

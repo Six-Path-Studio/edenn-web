@@ -9,7 +9,6 @@ import { Plus, ExternalLink, Loader2, MessageSquare } from "lucide-react"; // Re
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import Navbar from "@/components/landing/Navbar";
 import Container from "@/components/ui/Container";
 import { useAuth } from "@/components/providers/AuthProvider";
 
@@ -73,7 +72,6 @@ export default function UserProfilePage() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <Navbar isLoggedIn={isAuthenticated} />
 
       <Container className="pt-24 pb-20">
         {/* Profile Header (Mimics Game Header Style) */}
@@ -85,8 +83,8 @@ export default function UserProfilePage() {
         >
           {/* Background decoration or cover image could go here if available */}
           
-          <div className="flex items-center gap-6 z-10">
-             <div className="relative w-24 h-24 rounded-full border-4 border-white/20 overflow-hidden bg-black/50 shrink-0">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6 z-10 w-full">
+             <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white/20 overflow-hidden bg-black/50 shrink-0">
                 <Image 
                    src={getImageUrl(profileUser.avatar)}
                    alt={profileUser.name || "User"}
@@ -94,15 +92,15 @@ export default function UserProfilePage() {
                    className="object-cover"
                 />
              </div>
-             <div>
-                <h1 className="text-4xl md:text-5xl font-preahvihear text-white mb-2">{profileUser.name}</h1>
-                <p className="text-white/80 font-dm-sans text-lg capitalize">{profileUser.role || "Creator"}</p>
+             <div className="text-center sm:text-left flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl md:text-5xl font-preahvihear text-white mb-1 truncate">{profileUser.name}</h1>
+                <p className="text-white/80 font-dm-sans text-base md:text-lg capitalize">{profileUser.role || "Creator"}</p>
                 {profileUser.location && (
-                    <p className="text-white/60 font-dm-sans text-sm flex items-center gap-2 mt-1">
+                    <p className="text-white/60 font-dm-sans text-xs md:text-sm flex items-center justify-center sm:justify-start gap-2 mt-1">
                         📍 {profileUser.location}
                     </p>
                 )}
-                <p className="text-white/80 font-dm-sans text-sm font-medium mt-2">
+                <p className="text-white/80 font-dm-sans text-xs md:text-sm font-medium mt-2">
                     {profileUser.followersCount || 0} {profileUser.followersCount === 1 ? "Follower" : "Followers"}
                 </p>
              </div>
@@ -125,7 +123,7 @@ export default function UserProfilePage() {
                     </>
                 )}
               </motion.button>
-              <Link href="/messages">
+              <Link href={`/messages?userId=${profileId}`}>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

@@ -31,7 +31,7 @@ export default function SettingsSidebar({ activeTab, onTabChange }: SettingsSide
   ];
 
   return (
-    <div className="bg-[#0B0B0B] border border-white/5 rounded-[50px] py-12 flex flex-col items-start shadow-2xl min-h-[640px] px-10">
+    <div className="bg-[#0B0B0B]/80 backdrop-blur-xl border border-white/5 rounded-[30px] lg:rounded-[50px] py-12 flex flex-col items-start shadow-2xl min-h-full lg:min-h-[640px] px-10">
       {/* User Header Capsule */}
       <div className="w-full flex justify-start mb-10">
         <div className="inline-flex items-center gap-4 bg-[#111] border border-white/10 rounded-full pl-2 pr-8 py-2 shadow-inner">

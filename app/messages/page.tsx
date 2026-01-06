@@ -1,19 +1,31 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, MoreVertical, X, Paperclip, Triangle, Send, Trash2 } from "lucide-react"; // Added Trash2
+import { Plus, Search, MoreVertical, X, Paperclip, Triangle, Send, Trash2, ArrowLeft, MessageSquare } from "lucide-react"; // Added Trash2
 import { SendIcon, GiftIcon, StickerIcon } from "@/components/icons/CustomIcons"; // Added Custom Icons
 import Image from "next/image";
 import { Id } from "@/convex/_generated/dataModel";
-import Navbar from "@/components/landing/Navbar";
 
 export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="h-screen bg-[#070707]" />}>
+      <MessagesContent />
+    </Suspense>
+  );
+}
+
+function MessagesContent() {
   const { user, isAuthenticated } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const userIdParam = searchParams.get("userId");
   
   const conversations = useQuery(api.messages.getConversations, user?.id ? { userId: user.id as string } : "skip") || [];
   const allUsers = useQuery(api.users.getAllUsers) || [];
@@ -24,14 +36,29 @@ export default function MessagesPage() {
   const [activeDropdownId, setActiveDropdownId] = useState<Id<"messages"> | null>(null);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [showTopTooltips, setShowTopTooltips] = useState(false);
+  
+  // New State for Preview & Zoom
+  const [filePreview, setFilePreview] = useState<{ file: File; url: string; type: 'image' | 'file' } | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // State for Optimistic UI
+  const [pendingMessages, setPendingMessages] = useState<any[]>([]); // simplified type for now
+
   const messages = useQuery(
     api.messages.getMessages,
     selectedConversationId ? { conversationId: selectedConversationId } : "skip"
   );
   
+  // Merge Real & Pending Messages
+  const allMessages = [...(messages || []), ...pendingMessages].sort((a, b) => a.createdAt - b.createdAt);
+
   const sendMessage = useMutation(api.messages.sendMessage);
   const editMessage = useMutation(api.messages.editMessage); 
   const deleteMessage = useMutation(api.messages.deleteMessage); // Added delete hook
@@ -44,6 +71,16 @@ export default function MessagesPage() {
   
   // State for sticker picker
   const [isStickerPickerOpen, setIsStickerPickerOpen] = useState(false);
+
+  // Show tooltips for top buttons on mobile briefly
+  useEffect(() => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+    if (isMobile) {
+      setShowTopTooltips(true);
+      const timer = setTimeout(() => setShowTopTooltips(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Mark CURRENT conversation as read when selected or messages update
   useEffect(() => {
@@ -72,7 +109,7 @@ export default function MessagesPage() {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, selectedConversation?.typing]);
+  }, [allMessages, selectedConversation?.typing]);
 
   const handleTyping = (text: string) => {
     setMessageText(text);
@@ -98,39 +135,138 @@ export default function MessagesPage() {
     }, 2000);
   };
 
+  // 1. Handle File Selection (No Upload Yet)
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const isImage = file.type.startsWith("image/");
+      const url = isImage ? URL.createObjectURL(file) : "";
+      
+      setFilePreview({
+          file,
+          url,
+          type: isImage ? 'image' : 'file'
+      });
+  };
+
+  // 2. Handle Send (Text OR File)
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageText.trim() || !selectedConversationId || !user?.id) return;
+    if ((!messageText.trim() && !filePreview) || !selectedConversationId || !user?.id) return;
+    
+    // Prevent double submission
+    if (isUploading) return;
 
     const text = messageText;
-    setMessageText(""); // Optimistic clear
+    const currentFile = filePreview;
+    
+    // Optimistic Reset
+    setMessageText(""); 
+    setFilePreview(null);
+    if(fileInputRef.current) fileInputRef.current.value = "";
+    
     const editingId = editingMessageId;
     setEditingMessageId(null);
 
+    // Optimistic Message Creation
+    const tempId = Date.now().toString();
+    if (!editingId) {
+        setPendingMessages(prev => [...prev, {
+            _id: tempId,
+            conversationId: selectedConversationId,
+            senderId: user.id,
+            text,
+            imageUrl: currentFile?.type === 'image' ? currentFile.url : undefined,
+            attachmentUrl: currentFile?.type === 'file' ? '#' : undefined,
+            attachmentName: currentFile?.file.name,
+            createdAt: Date.now(),
+            isPending: true
+        }]);
+    }
+
     try {
       if (editingId) {
+          // Editing existing message (Text only for now)
           await editMessage({
               messageId: editingId,
               userId: user.id as Id<"users">,
               text
           });
       } else {
+        // Sending New Message
+        let storageId: Id<"_storage"> | undefined = undefined;
+
+        // A. Handle File Upload if present
+        if (currentFile) {
+            setIsUploading(true); // Keep global loading state for button if needed, though hidden now
+            try {
+                let fileToUpload = currentFile.file;
+                
+                // Compress if image
+                if (currentFile.type === 'image') {
+                    const options = {
+                        maxSizeMB: 0.5,
+                        maxWidthOrHeight: 1200,
+                        useWebWorker: true,
+                    };
+                    try {
+                        fileToUpload = await imageCompression(currentFile.file, options);
+                    } catch (error) {
+                        console.error("Compression error", error);
+                    }
+                }
+
+                // Get URL & Upload
+                const postUrl = await generateUploadUrl();
+                const result = await fetch(postUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": currentFile.file.type },
+                    body: fileToUpload,
+                });
+
+                if (!result.ok) throw new Error("Upload failed");
+                const data = await result.json();
+                storageId = data.storageId;
+
+            } catch(err) {
+                console.error("Upload process failed", err);
+                toast.error("Failed to upload file");
+                // Remove pending message on failure
+                setPendingMessages(prev => prev.filter(m => m._id !== tempId));
+                setFilePreview(currentFile); // Restore preview
+                setMessageText(text);
+                setIsUploading(false);
+                return; 
+            }
+            setIsUploading(false);
+        }
+
+        // B. Send Message Mutation
         await sendMessage({
             conversationId: selectedConversationId,
             senderId: user.id as Id<"users">,
             text,
+            imageUrl: currentFile?.type === 'image' ? storageId : undefined,
+            attachmentUrl: currentFile?.type === 'file' ? storageId : undefined,
+            attachmentName: currentFile?.file.name,
         });
+
+        // Remove pending message on success
+        setPendingMessages(prev => prev.filter(m => m._id !== tempId));
       }
     } catch (err) {
       console.error("Failed to send", err);
+      // Remove pending and restore
+      setPendingMessages(prev => prev.filter(m => m._id !== tempId));
       if (editingId) {
-          setMessageText(text); // Restore if failed
+          setMessageText(text);
           setEditingMessageId(editingId);
       }
     }
   };
 
-  const handleStartChat = async (targetUserId: Id<"users">) => {
+  const handleStartChat = useCallback(async (targetUserId: Id<"users">) => {
      if (!user?.id) return;
      try {
         const conversationId = await getOrCreateConversation({ 
@@ -143,7 +279,16 @@ export default function MessagesPage() {
         console.error("Failed to create chat", err);
         toast.error("Could not create chat");
      }
-  };
+  }, [user?.id, getOrCreateConversation]);
+
+  useEffect(() => {
+    if (userIdParam && user?.id) {
+       handleStartChat(userIdParam as Id<"users">);
+       router.replace('/messages');
+    }
+  }, [userIdParam, user?.id, handleStartChat, router]);
+
+  // Removed old handleFileUpload related to direct onChange
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -159,12 +304,11 @@ export default function MessagesPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#070707] text-white font-dm-sans"> 
-      <Navbar isLoggedIn={isAuthenticated} />
       
-      <div className="flex flex-1 pt-[88px] overflow-hidden max-w-[1600px] w-full mx-auto px-6 gap-6 pb-6">
+      <div className="flex flex-1 pt-[88px] overflow-hidden max-w-[1600px] w-full mx-auto px-4 md:px-6 gap-6 pb-6">
         
         {/* Sidebar - Conversation List */}
-        <div className="w-[400px] flex flex-col bg-[#111] rounded-[32px] border border-[#222] overflow-hidden shadow-2xl">
+        <div className={`w-full md:w-[400px] flex flex-col bg-[#111] rounded-[32px] border border-[#222] overflow-hidden shadow-2xl ${selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
           {/* Header */}
           <div className="p-6 pb-4">
             <div className="flex items-center justify-between mb-6">
@@ -259,13 +403,19 @@ export default function MessagesPage() {
         </div>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col bg-[#111] rounded-[32px] border border-[#222] overflow-hidden shadow-2xl relative">
+        <div className={`flex-1 flex-col bg-[#111] rounded-[32px] border border-[#222] overflow-hidden shadow-2xl relative ${!selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
           {selectedConversationId ? (
             <>
               {/* Chat Header */}
-              <div className="h-[90px] border-b border-[#222] px-8 flex items-center justify-between bg-[#111] z-10">
+              <div className="h-[80px] md:h-[90px] border-b border-[#222] px-4 md:px-8 flex items-center justify-between bg-[#111] z-10 shrink-0">
                 <div className="flex items-center gap-4">
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden bg-[#222] border border-[#333]">
+                  <button 
+                    onClick={() => setSelectedConversationId(null)}
+                    className="md:hidden p-2 -ml-2 text-white hover:bg-white/10 rounded-full"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden bg-[#222] border border-[#333] shrink-0">
                     <Image 
                       src={(otherUser?.avatar && (otherUser.avatar.startsWith("http") || otherUser.avatar.startsWith("/"))) ? otherUser.avatar : "/images/avatar.png"} 
                       alt={otherUser?.name || "User"} 
@@ -273,50 +423,81 @@ export default function MessagesPage() {
                       className="object-cover" 
                     />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">{otherUser?.name || "Unknown"}</h2>
-                    <span className="text-sm text-[#555] font-medium">@{otherUser?.name?.toLowerCase().replace(/\s/g, '')}</span>
+                  <div className="min-w-0">
+                    <h2 className="text-base md:text-xl font-bold text-white truncate max-w-[80px] sm:max-w-[150px] md:max-w-none">{otherUser?.name || "Unknown"}</h2>
+                    <span className="text-xs md:text-sm text-[#555] font-medium block truncate max-w-[80px] sm:max-w-[150px] md:max-w-none">@{otherUser?.name?.toLowerCase().replace(/\s/g, '')}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                    {/* Send Gift */}
-                   <button 
-                     onClick={() => toast.info("Gifting coming soon!")}
-                     className="h-10 px-4 rounded-full border border-[#40A261] text-[#40A261] flex items-center gap-2 hover:bg-[#40A261]/10 transition-colors text-sm font-bold"
-                   >
-                       <GiftIcon />
-                       <span>Send a gift</span>
-                   </button>
+                   <div className="relative">
+                       <AnimatePresence>
+                           {showTopTooltips && (
+                               <motion.div 
+                                   initial={{ opacity: 0, y: 10 }}
+                                   animate={{ opacity: 1, y: 0 }}
+                                   exit={{ opacity: 0, y: 10 }}
+                                   className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-[#7628DB] text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap z-50 lg:hidden shadow-lg border border-white/10"
+                               >
+                                   Send Gifts
+                                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#7628DB] rotate-45 border-t border-l border-white/10" />
+                               </motion.div>
+                           )}
+                       </AnimatePresence>
+                       <button 
+                         onClick={() => toast.info("Gifting coming soon!")}
+                         className="h-10 px-3 md:px-4 rounded-full border border-[#40A261] text-[#40A261] flex items-center gap-2 hover:bg-[#40A261]/10 transition-colors text-xs md:text-sm font-bold shrink-0"
+                       >
+                           <GiftIcon />
+                           <span className="hidden sm:inline">Send a gift</span>
+                       </button>
+                   </div>
 
                    {/* Upvote */}
-                   <button 
-                     onClick={async () => {
-                         if (!user?.id || !otherUser?._id) return;
-                         await toggleUpvote({ userId: user.id as Id<"users">, targetId: otherUser._id });
-                     }}
-                     className={`h-10 px-4 rounded-full flex items-center gap-2 transition-colors text-sm font-bold ${
-                         otherUser?.upvotedBy?.some((id: any) => id === user?.id)
-                         ? "bg-[#4ADE80] text-black"
-                         : "bg-[#7628DB] text-white hover:bg-[#8a3be8]"
-                     }`}
-                   >
-                       <Triangle className={`w-3 h-3 ${otherUser?.upvotedBy?.some((id: any) => id === user?.id) ? "fill-black" : "fill-white"}`} />
-                       <span>{otherUser?.upvotedBy?.some((id: any) => id === user?.id) ? "Upvoted" : "Upvote"} • {otherUser?.upvotes || 0}</span>
-                   </button>
+                   <div className="relative">
+                       <AnimatePresence>
+                           {showTopTooltips && (
+                               <motion.div 
+                                   initial={{ opacity: 0, y: 10 }}
+                                   animate={{ opacity: 1, y: 0 }}
+                                   exit={{ opacity: 0, y: 10 }}
+                                   className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-[#7628DB] text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap z-50 lg:hidden shadow-lg border border-white/10"
+                               >
+                                   Upvote Profile
+                                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#7628DB] rotate-45 border-t border-l border-white/10" />
+                               </motion.div>
+                           )}
+                       </AnimatePresence>
+                       <button 
+                         onClick={async () => {
+                             if (!user?.id || !otherUser?._id) return;
+                             await toggleUpvote({ userId: user.id as Id<"users">, targetId: otherUser._id });
+                         }}
+                         className={`h-10 px-3 md:px-4 rounded-full flex items-center gap-1.5 md:gap-2 transition-colors text-xs md:text-sm font-bold shrink-0 ${
+                             otherUser?.upvotedBy?.some((id: any) => id === user?.id)
+                             ? "bg-[#4ADE80] text-black"
+                             : "bg-[#7628DB] text-white hover:bg-[#8a3be8]"
+                         }`}
+                       >
+                           <Triangle className={`w-3 h-3 ${otherUser?.upvotedBy?.some((id: any) => id === user?.id) ? "fill-black" : "fill-white"}`} />
+                           <span className="hidden sm:inline">{otherUser?.upvotedBy?.some((id: any) => id === user?.id) ? "Upvoted" : "Upvote"} • </span>
+                           <span>{otherUser?.upvotes || 0}</span>
+                       </button>
+                   </div>
                    
-                   <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#1A1A1A] transition-colors text-[#777]">
+                   <button className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center hover:bg-[#1A1A1A] transition-colors text-[#777] shrink-0">
                       <MoreVertical className="w-5 h-5" />
                    </button>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-8 space-y-6">
-                {messages && messages.length > 0 ? (
-                  messages.map((msg, index) => {
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-3">
+                {allMessages && allMessages.length > 0 ? (
+                  allMessages.map((msg, index) => {
                     const isMe = msg.senderId === user?.id;
-                    const nextMsg = messages[index + 1];
-                    const prevMsg = messages[index - 1];
+                    const nextMsg = allMessages[index + 1];
+                    const prevMsg = allMessages[index - 1];
 
                     const isSameSenderAsNext = nextMsg?.senderId === msg.senderId;
                     const isSameSenderAsPrev = prevMsg?.senderId === msg.senderId;
@@ -333,11 +514,11 @@ export default function MessagesPage() {
                         key={msg._id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/message ${isGrouped ? 'mt-px' : 'mt-4'}`}
+                        className={`flex ${isMe ? 'justify-end' : 'justify-start'} group/message ${isGrouped ? 'mt-px' : 'mt-2'}`}
                       >
                         <div className={`max-w-[65%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                            <div className="flex items-center gap-2 relative">
-                               {isMe && (
+                               {isMe && !msg.isPending && (
                                    <div className="opacity-0 group-hover/message:opacity-100 transition-opacity flex items-center relative">
                                        <button 
                                         onClick={(e) => {
@@ -392,7 +573,7 @@ export default function MessagesPage() {
                                    </div>
                                )}
                                <div 
-                                 className={`px-5 py-3 text-[16px] leading-relaxed relative shadow-sm break-words ${
+                                 className={`px-3 py-2 text-[15px] leading-relaxed relative shadow-sm break-words ${
                                    isMe 
                                    // My Message
                                      ? 'bg-linear-to-br from-[#7628DB] to-[#6020A0] text-white' 
@@ -403,14 +584,50 @@ export default function MessagesPage() {
                                     isMe 
                                         ? `rounded-[22px] ${isGrouped ? 'rounded-tr-md' : 'rounded-tr-[22px]'} ${isSameSenderAsNext && isCloseToNext ? 'rounded-br-md' : 'rounded-br-[22px]'}`
                                         : `rounded-[22px] ${isGrouped ? 'rounded-tl-md' : 'rounded-tl-[22px]'} ${isSameSenderAsNext && isCloseToNext ? 'rounded-bl-md' : 'rounded-bl-[22px]'}`
-                                 }`}
+                                 } ${msg.isPending ? 'opacity-80' : ''}`}
                                >
+                                 {(msg as any).imageUrl && (
+                                   <>
+                                     <div 
+                                        onClick={() => !msg.isPending && setZoomedImage(msg.imageUrl)}
+                                        className={`mb-2 relative rounded-[12px] overflow-hidden border border-white/10 ${!msg.isPending ? 'cursor-zoom-in' : ''}`}
+                                     >
+                                        <img 
+                                          src={(msg as any).imageUrl} 
+                                          alt="Sent image" 
+                                          className="max-w-full max-h-[300px] object-contain"
+                                        />
+                                        {msg.isPending && (
+                                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                               <div className="w-6 h-6 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                                           </div>
+                                        )}
+                                     </div>
+                                   </>
+                                 )}
+                                 {(msg as any).attachmentUrl && (
+                                   <a 
+                                      href={(msg as any).attachmentUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-3 bg-black/20 p-3 rounded-xl mb-2 hover:bg-black/30 transition-colors border border-white/5"
+                                   >
+                                      <div className="w-10 h-10 rounded-lg bg-black/40 flex items-center justify-center">
+                                          <Paperclip size={18} className="text-[#8AF0C5]" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium truncate">{(msg as any).attachmentName || "File"}</p>
+                                          <p className="text-[10px] opacity-50 uppercase font-bold">Download File</p>
+                                      </div>
+                                   </a>
+                                 )}
                                  {msg.text}
                                </div>
                            </div>
                            {showTimestamp && (
                                <span className={`text-[11px] font-medium text-[#444] mt-1 px-2 select-none ${isMe ? 'text-right' : 'text-left'}`}>
                                   {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {msg.isPending && " • Sending..."}
                                </span>
                            )}
                         </div>
@@ -419,8 +636,10 @@ export default function MessagesPage() {
                   })
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center opacity-30">
-                        <Image src="/images/logo.png" width={100} height={100} alt="Logo" className="grayscale mb-4" />
-                        <p className="text-[#555]">Secure Conversation</p>
+                        <div className="w-20 h-20 bg-[#222] rounded-2xl flex items-center justify-center mb-4">
+                            <MessageSquare className="w-10 h-10 text-[#7628DB]" />
+                        </div>
+                        <p className="text-[#555] font-dm-sans">Secure Conversation</p>
                     </div>
                 )}
                 
@@ -442,6 +661,31 @@ export default function MessagesPage() {
                 <div ref={messagesEndRef} />
               </div>
 
+               {/* Zoom Overlay */}
+               <AnimatePresence>
+                 {zoomedImage && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setZoomedImage(null)}
+                        className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out backdrop-blur-md"
+                    >
+                        <motion.img 
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            src={zoomedImage}
+                            alt="Full screen"
+                            className="max-w-full max-h-screen object-contain rounded-lg shadow-2xl"
+                        />
+                        <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
+                            <X className="w-6 h-6 text-white" />
+                        </button>
+                    </motion.div>
+                 )}
+               </AnimatePresence>
+
               {/* Input Area */}
               <div className="p-6 bg-[#070707] border-t border-[#111]">
                  {editingMessageId && (
@@ -450,11 +694,59 @@ export default function MessagesPage() {
                          <button onClick={() => { setEditingMessageId(null); setMessageText(""); }} className="hover:text-white">Cancel</button>
                      </div>
                  )}
+                 
+                 {/* File Preview */}
+                 <AnimatePresence>
+                    {filePreview && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: 10, height: 0 }}
+                            className="flex items-center gap-3 bg-[#111] p-3 rounded-2xl mb-4 border border-[#222]"
+                        >
+                             {filePreview.type === 'image' ? (
+                                 <div className="w-12 h-12 rounded-lg overflow-hidden relative">
+                                     <img src={filePreview.url} alt="To send" className="w-full h-full object-cover" />
+                                 </div>
+                             ) : (
+                                  <div className="w-12 h-12 rounded-lg bg-[#222] flex items-center justify-center">
+                                      <Paperclip className="w-5 h-5 text-[#8AF0C5]" />
+                                  </div>
+                             )}
+                             <div className="flex-1 min-w-0">
+                                 <p className="text-sm font-medium text-white truncate">{filePreview.file.name}</p>
+                                 <p className="text-xs text-[#666]">{(filePreview.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                 {isUploading && <div className="w-4 h-4 border-2 border-[#7628DB] border-t-transparent rounded-full animate-spin" />}
+                                 <button 
+                                     onClick={() => {
+                                         setFilePreview(null);
+                                         if(fileInputRef.current) fileInputRef.current.value = "";
+                                     }}
+                                     className="p-2 hover:bg-[#222] rounded-full text-[#666] hover:text-white transition-colors"
+                                 >
+                                     <X className="w-4 h-4" />
+                                 </button>
+                             </div>
+                        </motion.div>
+                    )}
+                 </AnimatePresence>
+
                 <div className="flex items-center gap-3">
                     {/* Paperclip */}
-                    <button className="w-12 h-12 rounded-[16px] bg-[#111] border border-[#222] flex items-center justify-center hover:bg-[#1A1A1A] hover:border-[#333] transition-all shrink-0"
-                            onClick={() => toast.info("File upload coming soon!")}>
-                        <Paperclip className="w-5 h-5 text-[#8AF0C5]" />
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      onChange={handleFileSelect}
+                    />
+                    <button 
+                      disabled={isUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-12 h-12 rounded-[16px] bg-[#111] border border-[#222] flex items-center justify-center hover:bg-[#1A1A1A] hover:border-[#333] transition-all shrink-0 relative group"
+                    >
+                        <Paperclip className="w-5 h-5 text-[#8AF0C5] group-hover:scale-110 transition-transform" />
                     </button>
 
                     {/* Input */}
@@ -486,7 +778,7 @@ export default function MessagesPage() {
                               type="text" 
                               value={messageText}
                               onChange={(e) => handleTyping(e.target.value)}
-                              placeholder="click to type message" 
+                              placeholder={filePreview ? "Add a caption..." : "Write a message..."} 
                               className="w-full h-[52px] bg-[#111] border border-[#222] rounded-[16px] pl-12 pr-4 text-white text-[15px] placeholder-[#444] focus:outline-none focus:border-[#7628DB] focus:bg-[#151515] transition-all"
                             />
                         </form>
@@ -495,10 +787,13 @@ export default function MessagesPage() {
                     {/* Send Button */}
                     <button 
                       onClick={handleSend}
-                      disabled={!messageText.trim()}
-                      className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!messageText.trim() && !filePreview || isUploading}
+                      className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
-                      <SendIcon />
+                       <div className="relative">
+                            {isUploading && <div className="absolute inset-0 border-2 border-[#7628DB] border-t-transparent rounded-full animate-spin" />}
+                            <SendIcon />
+                       </div>
                     </button>
                 </div>
               </div>

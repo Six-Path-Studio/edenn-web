@@ -157,7 +157,7 @@ declare global {
             shape?: string;
             width?: number;
           }) => void;
-          prompt: () => void;
+          prompt: (moment_callback?: (notification: any) => void) => void;
           disableAutoSelect: () => void;
           revoke: (hint: string, callback: () => void) => void;
         };

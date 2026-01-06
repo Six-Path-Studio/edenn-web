@@ -29,8 +29,8 @@ export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalP
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="relative w-full max-w-[440px] bg-[#0d0d0d] border border-white/10 rounded-[40px] p-10 flex flex-col items-center shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
           >
-            <h2 className="text-white text-2xl font-semibold font-dm-sans mb-10">
-              Do you want to Logout?
+            <h2 className="text-white text-2xl font-semibold font-dm-sans mb-10 text-center">
+              Are you sure you want to log out?
             </h2>
 
             {/* SVG Icon Container */}
@@ -86,15 +86,15 @@ export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalP
             <div className="w-full flex gap-4">
               <button
                 onClick={onClose}
-                className="flex-1 bg-primary hover:bg-[#8b3eff] text-white py-4 rounded-full font-dm-sans font-semibold transition-all active:scale-95 shadow-[0_4px_15px_rgba(118,40,219,0.3)]"
+                className="flex-1 border border-white/20 hover:bg-white/5 text-white py-4 rounded-full font-dm-sans font-semibold transition-all active:scale-95"
               >
-                No, Go Back
+                No, Stay
               </button>
               <button
                 onClick={onConfirm}
-                className="flex-1 border border-white/20 hover:bg-white/5 text-white py-4 rounded-full font-dm-sans font-semibold transition-all active:scale-95"
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 rounded-full font-dm-sans font-semibold transition-all active:scale-95 shadow-[0_4px_15px_rgba(239,68,68,0.3)]"
               >
-                Yes, Cancel
+                Yes, Log Out
               </button>
             </div>
           </motion.div>

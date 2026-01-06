@@ -33,9 +33,24 @@ export default function SignInStep({ onNext }: SignInStepProps) {
             setIsLoading(false);
           }
         },
-      } as any); // Cast to any to allow use_fedcm_for_prompt
+      } as any);
+
+      // Render the actual Google button into a hidden container
+      // This is often more reliable on mobile than just calling prompt()
+      const googleBtnRoot = document.getElementById("google-button-hidden");
+      if (googleBtnRoot) {
+        window.google.accounts.id.renderButton(googleBtnRoot, {
+          theme: "outline",
+          size: "large",
+          width: 400, // Matches our max-w
+          text: "signin_with",
+          shape: "rectangular"
+        });
+      }
     }
   }, [googleScriptLoaded, googleClientId, handleGoogleCredentialResponse]);
+
+
 
   // When user becomes authenticated, advance to next step
   useEffect(() => {
@@ -88,19 +103,22 @@ export default function SignInStep({ onNext }: SignInStepProps) {
 
       <div className="flex flex-col gap-4 w-full">
         {/* Google Button */}
-        <button
-          className="flex items-center justify-center gap-3 w-full py-4 bg-[#111] border border-[#222] hover:bg-[#1A1A1A] hover:border-[#333] transition-all rounded-2xl text-white font-dm-sans font-medium text-sm group"
-          onClick={() => {
-            if (window.google && googleScriptLoaded) {
-              window.google.accounts.id.prompt();
-            }
-          }}
-          disabled={isLoading || isAuthenticated || !googleClientId}
-        >
-          <GoogleIcon />
-          <span>Sign in with Google</span>
-          {isLoading && <Loader2 className="animate-spin ml-auto text-white/50" size={16} />}
-        </button>
+        <div className="relative w-full">
+          <button
+            className="flex items-center justify-center gap-3 w-full py-4 bg-[#111] border border-[#222] hover:bg-[#1A1A1A] hover:border-[#333] transition-all rounded-2xl text-white font-dm-sans font-medium text-sm group"
+            disabled={isLoading || isAuthenticated || !googleClientId}
+          >
+            <GoogleIcon />
+            <span>Sign in with Google</span>
+            {isLoading && <Loader2 className="animate-spin ml-auto text-white/50" size={16} />}
+          </button>
+          
+          {/* Overlay real Google button for absolute reliability on mobile */}
+          <div 
+            id="google-button-hidden" 
+            className="absolute inset-0 opacity-0 cursor-pointer overflow-hidden"
+          ></div>
+        </div>
 
         {/* Facebook Button */}
         <button

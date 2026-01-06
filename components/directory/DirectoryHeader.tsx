@@ -9,7 +9,7 @@ interface DirectoryHeaderProps {
 
 export function DirectoryHeader({ title, description }: DirectoryHeaderProps) {
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-6 mb-8 pt-24 px-4">
+    <div className="flex flex-col items-center justify-center text-center gap-6 mb-8 pt-12 px-4">
       <div className="flex flex-col items-center gap-4">
         <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight relative inline-block">
           {title}

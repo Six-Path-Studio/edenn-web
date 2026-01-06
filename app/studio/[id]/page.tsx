@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Triangle, ExternalLink } from "lucide-react";
-import Navbar from "@/components/landing/Navbar";
 import Container from "@/components/ui/Container";
 
 // Mock data - will be replaced with Convex fetch
@@ -31,8 +30,7 @@ export default function StudioProfilePage({ params }: { params: { id: string } }
   const studio = mockStudio; // Replace with actual fetch by params.id
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <Navbar isLoggedIn={true} />
+    <main className="min-h-screen bg-background text-foreground pt-24">
 
       <Container className="pt-24 pb-20">
         {/* Studio Header */}
