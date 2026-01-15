@@ -237,7 +237,7 @@ export default function GameProfilePage() {
                 <div className="border-t border-white/5 pt-4 flex justify-between items-center">
                   <span className="text-sm text-white font-dm-sans">Studio/Creator:</span>
                   {game.studio ? (
-                     <Link href={`/studios/${game.studio._id}`} className="text-sm text-white/60 font-dm-sans underline hover:text-white transition-colors">
+                     <Link href={`/studio/${game.studio._id}`} className="text-sm text-white/60 font-dm-sans underline hover:text-white transition-colors">
                        {game.studio.name}
                      </Link>
                   ) : game.creator ? (

@@ -95,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(newUser);
       localStorage.setItem("edenn_user", JSON.stringify(newUser));
     } catch (error) {
-      console.error("Google sign in error:", error);
       throw error;
     }
   }, [storeUser]);
@@ -111,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Revoke the current session completely
       if (user?.email) {
         window.google.accounts.id.revoke(user.email, () => {
-          console.log("Google session revoked");
+          // Session revoked
         });
       }
     }

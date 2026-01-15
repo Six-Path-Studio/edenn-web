@@ -15,7 +15,7 @@ export function DirectoryHeader({ title, description }: DirectoryHeaderProps) {
           {title}
           <div className="absolute -bottom-1 left-0 right-0 h-[3px] bg-white hidden" /> {/* Underline if needed */}
         </h1>
-        <p className="text-white/60 max-w-2xl text-sm md:text-base font-light leading-relaxed">
+        <p className="text-white/60 max-w-2xl text-sm md:text-base font-preahvihear font-light leading-relaxed">
           {description}
         </p>
       </div>

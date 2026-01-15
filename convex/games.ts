@@ -208,6 +208,21 @@ export const updateGame = mutation({
     featured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    const game = await ctx.db.get(args.id);
+    if (!game) throw new Error("Game not found");
+
+    if (!user || user._id !== game.creatorId) {
+       throw new Error("Unauthorized: You can only update your own games");
+    }
+
     const { id, ...updates } = args;
     await ctx.db.patch(id, updates);
   },

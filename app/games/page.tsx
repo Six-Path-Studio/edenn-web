@@ -57,17 +57,14 @@ export default function GamesPage() {
             <p className="text-white/40">No games found.</p>
           </div>
         ) : (
-          <motion.div 
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-             {games.map(game => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {games.map((game, i) => (
                <motion.div 
                  key={game._id} 
-                 variants={item}
+                 initial={{ opacity: 0, y: 20 }}
+                 whileInView={{ opacity: 1, y: 0 }}
+                 viewport={{ once: true, margin: "-50px" }}
+                 transition={{ duration: 0.5, delay: i % 3 * 0.1 }}
                  whileHover={{ y: -5, transition: { duration: 0.3, ease: "easeOut" } }}
                  className="h-full"
                >
@@ -79,7 +76,7 @@ export default function GamesPage() {
                   />
                </motion.div>
              ))}
-          </motion.div>
+          </div>
         )}
       </div>
     </main>

@@ -286,16 +286,7 @@ export default function UserProfilePage() {
               transition={{ duration: 0.5, delay: 0.15 }}
               className="bg-[#111] border border-white/5 rounded-[32px] p-6 relative overflow-hidden flex-1 min-h-[200px]"
             >
-               {/* Background Image for Card from request */}
-               <div className="absolute inset-0 z-0 opacity-10">
-                    <Image
-                        src="/images/Screenshot 2025-06-13 184845 1.png"
-                        alt="Background"
-                        fill
-                        className="object-cover"
-                    />
-                     <div className="absolute inset-0 bg-linear-to-b from-[#111]/80 to-[#111]" />
-               </div>
+               <div className="absolute inset-0 z-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent" />
 
               <div className="relative z-10 h-full flex flex-col">
                 <div className="space-y-6 flex-1">
@@ -419,30 +410,16 @@ export default function UserProfilePage() {
                                 </div>
                             ))
                         ) : (
-                             // Mock Snapshots if none match - User wants to see this section filled
-                             [1, 2, 3, 4, 5, 6].map((_, i) => (
-                                <div key={i} className="group relative aspect-video rounded-[24px] overflow-hidden border border-white/10 bg-[#111]">
-                                    <Image 
-                                        src={`/images/Splash Loading Screen.jpg`} // Generic fallback
-                                        alt={`Snapshot ${i}`}
-                                        fill
-                                        className="object-cover opacity-60 group-hover:opacity-80 transition-opacity"
-                                        onError={(e) => { e.currentTarget.src = "/images/Splash Loading Screen.jpg" }}
-                                    />
-                                    <div className="absolute top-4 left-4 flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-black/50 overflow-hidden relative border border-white/20">
-                                             <Image src={profileUser.avatar || "/images/Group 34374.png"} fill alt="User" className="object-cover" />
-                                        </div>
+                             // No content state
+                             userGames.length === 0 && (
+                                <div className="col-span-full py-20 bg-[#111] rounded-[32px] border border-white/5 flex flex-col items-center justify-center text-center">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                        <Triangle className="w-8 h-8 text-white/20" />
                                     </div>
-                                    <div className="absolute inset-x-0 bottom-0 p-4 bg-linear-to-t from-black to-transparent flex justify-between items-center">
-                                         <div>
-                                            <p className="text-white font-bold text-sm">Unbroken</p>
-                                            <p className="text-white/40 text-[10px] uppercase tracking-wider">@Raven Studios</p>
-                                         </div>
-                                         <button className="bg-[#7628DB] text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase hover:bg-[#6020A0]">Link</button>
-                                    </div>
+                                    <h3 className="text-white font-medium text-lg mb-1">Portfolio coming soon</h3>
+                                    <p className="text-white/40 text-sm">Stay tuned for amazing work from this {isStudio ? 'Studio' : 'Creator'}.</p>
                                 </div>
-                             ))
+                             )
                         )
                     )}
                 </div>

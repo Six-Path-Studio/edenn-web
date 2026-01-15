@@ -57,7 +57,6 @@ export const signOut = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     // Could log sign out, update last seen, etc.
-    console.log("User signed out:", args.userId);
     return true;
   },
 });

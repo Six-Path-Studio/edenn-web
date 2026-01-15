@@ -22,8 +22,13 @@ const resolveUser = async (ctx: any, user: any) => {
 export const getMessages = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
-    // In a real secure app, we would verify the user is a participant here.
-    // For now, allow reading messages if the client has the conversation ID.
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) return [];
+
+    // In a real secure app, we should verify the user's session here.
+    // However, since identity is managed via tokenIdentifier in other modules,
+    // we should at least check if conversation participants is being queried correctly.
+    
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
@@ -69,12 +74,15 @@ export const sendMessage = mutation({
     attachmentName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Validate sender exists
-    const user = await ctx.db.get(args.senderId);
-    if (!user) throw new Error("User not found");
-    
     // Determine preview text for conversation
     const displayMessage = args.text || (args.imageUrl ? "Sent an image" : args.attachmentName ? `Sent: ${args.attachmentName}` : "New message");
+
+    // Validate conversation and participants
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+    if (!conversation.participants.includes(args.senderId)) {
+        throw new Error("Unauthorized: You are not a participant in this conversation");
+    }
 
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
@@ -87,8 +95,7 @@ export const sendMessage = mutation({
     });
 
     // Update conversation's last message, clear typing for sender
-    const conversation = await ctx.db.get(args.conversationId);
-    let typing = conversation?.typing || {};
+    let typing = conversation.typing || {};
     if (typing[args.senderId]) {
       delete typing[args.senderId];
     }
@@ -131,6 +138,10 @@ export const setTypingStatus = mutation({
   handler: async (ctx, args) => {
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return;
+
+    if (!conversation.participants.includes(args.userId)) {
+        throw new Error("Unauthorized");
+    }
 
     let typing = conversation.typing || {};
     

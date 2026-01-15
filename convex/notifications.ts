@@ -298,6 +298,18 @@ export const getUnreadNotificationCount = query({
 export const markNotificationsAsRead = mutation({
     args: { userId: v.id("users") },
     handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Unauthenticated");
+
+        const user = await ctx.db
+          .query("users")
+          .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+          .first();
+
+        if (!user || user._id !== args.userId) {
+           throw new Error("Unauthorized");
+        }
+
        const unread = await ctx.db
          .query("notifications")
          .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId).eq("read", false))

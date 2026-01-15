@@ -28,15 +28,13 @@ export default function CreatorsPage() {
   };
 
   const item = {
-    hidden: { opacity: 0, x: -15, scale: 0.98 },
+    hidden: { opacity: 0, x: -10 },
     show: { 
       opacity: 1, 
       x: 0, 
-      scale: 1,
       transition: {
-        type: "spring" as const,
-        stiffness: 80,
-        damping: 15
+        duration: 0.4,
+        ease: "easeOut"
       }
     }
   };
@@ -68,7 +66,7 @@ export default function CreatorsPage() {
           className="flex flex-col items-center justify-center text-center gap-6 mb-8 pt-24 px-4"
         >
             <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">Creators</h1>
-            <p className="text-white/60 max-w-2xl text-sm md:text-base font-light leading-relaxed">
+            <p className="text-white/60 max-w-2xl text-sm md:text-base font-preahvihear font-light leading-relaxed">
             Connect with world-class game development studios, indie creators, and gaming professionals. Find services, hire talent, or showcase your portfolio.
             </p>
              <div className="w-full max-w-2xl bg-[#111111] border border-[#222222] rounded-[24px] px-4 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 group focus-within:border-[#7628DB]/30 transition-all">
@@ -112,15 +110,16 @@ export default function CreatorsPage() {
               </div>
 
                <div className="bg-transparent rounded-[32px] flex flex-col gap-4">
-                <motion.div 
-                  variants={container}
-                  initial="show"
-                  animate="show"
-                  className="flex flex-col gap-3"
-                >
+                <div className="flex flex-col gap-3">
                     {isLoading ? (
                         Array.from({ length: 5 }).map((_, i) => (
-                             <div key={i} className="bg-[#1A1A1A] rounded-[24px] h-[100px] w-full animate-pulse border border-[#333]" />
+                             <motion.div 
+                               key={i} 
+                               initial={{ opacity: 0, x: -10 }}
+                               animate={{ opacity: 1, x: 0 }}
+                               transition={{ duration: 0.4, delay: i * 0.1 }}
+                               className="bg-[#1A1A1A] rounded-[24px] h-[100px] w-full animate-pulse border border-[#333]" 
+                             />
                         ))
                     ) : (creators || []).length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-[#0B0B0B] rounded-[24px] border border-[#222]">
@@ -133,10 +132,13 @@ export default function CreatorsPage() {
                             </div>
                         </div>
                     ) : (
-                        creators.map((c, i) => (
-                      <Link href={`/profile/${c._id}`} key={i} className="block w-full">
+                       creators.map((c, i) => (
+                      <Link href={`/creators/${c._id}`} key={c._id} className="block w-full">
                       <motion.div 
-                        variants={item}
+                        initial={{ opacity: 0, x: -10 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: "-20px" }}
+                        transition={{ duration: 0.5, delay: i % 10 * 0.05 }}
                         whileHover={{ x: 6, backgroundColor: "#141414", borderColor: "#7628DB", transition: { duration: 0.2 } }}
                         className="bg-[#0B0B0B] rounded-[24px] p-5 flex items-center justify-between border border-[#222] transition-all group cursor-pointer shadow-sm"
                       >
@@ -183,7 +185,7 @@ export default function CreatorsPage() {
                       </motion.div>
                       </Link>
                     )))}
-                </motion.div>
+                </div>
                </div>
            </div>
 

@@ -91,6 +91,18 @@ export const saveUserAvatar = mutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user || user._id !== args.userId) {
+       throw new Error("Unauthorized");
+    }
+
     const url = await ctx.storage.getUrl(args.storageId);
     if (!url) throw new Error("Failed to get file URL");
     await ctx.db.patch(args.userId, {

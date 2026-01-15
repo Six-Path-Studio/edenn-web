@@ -106,7 +106,6 @@ export default function OnboardingPage() {
         });
       }
 
-      console.log("Onboarding completed!", formData);
       localStorage.setItem("edenn_onboarding_completed", "true");
       router.push("/profile");
     } catch (error) {

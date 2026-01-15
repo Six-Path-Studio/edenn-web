@@ -62,8 +62,8 @@ const GameCard = ({ title, studio, imageSrc, avatarSrc }: GameCardProps) => {
 
 export default function Hero() {
   const cards = [
-    { title: "Unbroken", studio: "Raven Illusion Studio", imageSrc: "/images/Image1gun.png", avatarSrc: "/images/avatar.png" },
-    { title: "Vodou", studio: "Juju Games", imageSrc: "/images/bazz adv.png", avatarSrc: "/images/avatar.png" },
+    { title: "Sabi Driver", studio: "Gameverse Africa", imageSrc: "/images/Splash Loading Screen.jpg", avatarSrc: "/images/Group 34374.png" },
+    { title: "Otite Reborn", studio: "Logic Dev Studios", imageSrc: "/images/Screenshot 2025-06-13 184845 1.png", avatarSrc: "/images/Mask group.png" },
     { title: "Beyond Service", studio: "Goondu Interactive", imageSrc: "/images/BeyondService.png", avatarSrc: "/images/avatar.png" },
   ];
 

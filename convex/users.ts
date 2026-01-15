@@ -147,10 +147,10 @@ export const getCreators = query({
     // Fetch ALL users first
     const users = await ctx.db.query("users").collect();
 
-    // Filter and sort in JS
+    // Filter and sort by upvotes (descending)
     const creators = users
       .filter((u) => u.role === "creator")
-      .sort((a, b) => b._creationTime - a._creationTime);
+      .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
 
     return Promise.all(creators.map(user => resolveUserImages(ctx, user)));
   },
@@ -162,36 +162,40 @@ export const getStudios = query({
     // Fetch ALL users first to debug/ensure we get data
     const users = await ctx.db.query("users").collect();
 
-    // Filter and sort in JS to be 100% sure
+    // Filter and sort by upvotes (descending)
     const studios = users
       .filter((u) => u.role === "studio")
-      .sort((a, b) => b._creationTime - a._creationTime);
+      .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
 
     return Promise.all(studios.map(user => resolveUserImages(ctx, user)));
   },
 });
 
-// Get featured creators
+// Get featured creators (top 3 by upvotes)
 export const getFeaturedCreators = query({
   handler: async (ctx) => {
-    const users = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("role"), "creator"))
-      .take(10);
+    const users = await ctx.db.query("users").collect();
+    
+    const creators = users
+      .filter((u) => u.role === "creator")
+      .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))
+      .slice(0, 3);
       
-    return Promise.all(users.map(user => resolveUserImages(ctx, user)));
+    return Promise.all(creators.map(user => resolveUserImages(ctx, user)));
   },
 });
 
-// Get featured studios
+// Get featured studios (top 3 by upvotes)
 export const getFeaturedStudios = query({
   handler: async (ctx) => {
-    const users = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("role"), "studio"))
-      .take(10);
+    const users = await ctx.db.query("users").collect();
+    
+    const studios = users
+      .filter((u) => u.role === "studio")
+      .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))
+      .slice(0, 3);
 
-    return Promise.all(users.map(user => resolveUserImages(ctx, user)));
+    return Promise.all(studios.map(user => resolveUserImages(ctx, user)));
   },
 });
 
@@ -258,6 +262,18 @@ export const updateUser = mutation({
     }))),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user || user._id !== args.id) {
+       throw new Error("Unauthorized: You can only update your own profile");
+    }
+
     const { id, ...updates } = args;
     await ctx.db.patch(id, updates);
   },
@@ -288,12 +304,22 @@ export const markOnboardingComplete = mutation({
 export const getUserByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
-    const user = await ctx.db
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const authenticatedUser = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .first();
 
-    if (!user) return null;
+    if (!authenticatedUser || authenticatedUser.email !== args.email) {
+       throw new Error("Unauthorized: You can only fetch your own profile by email.");
+    }
+
+    // Use the authenticated user as the target user
+    const user = authenticatedUser;
+
+    if (!user) return null; // Should not happen if authenticatedUser is found
 
     const followers = await ctx.db
       .query("follows")

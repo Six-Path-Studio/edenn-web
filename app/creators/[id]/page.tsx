@@ -149,78 +149,121 @@ export default function CreatorPublicProfilePage() {
       <Container className="pt-24 pb-20">
         
         {/* HERO SECTION / PROFILE HEADER */}
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full relative rounded-[32px] overflow-hidden mb-8 min-h-[350px] flex flex-col justify-end group"
-        >
-             {/* Background Image */}
-             <div className="absolute inset-0 z-0">
-                <Image 
-                    src={profileUser.coverImage || "/images/Splash Loading Screen.jpg"}
-                    alt="Cover"
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    priority
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-[#050505] via-black/40 to-transparent" />
-             </div>
+        <div className="w-full relative mb-12">
+            {/* Banner Image Container */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="relative w-full aspect-21/9 sm:aspect-21/7 rounded-[32px] overflow-hidden bg-[#1A1A1A] group"
+            >
+                {profileUser.coverImage ? (
+                    <Image 
+                        src={profileUser.coverImage}
+                        alt="Cover"
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        priority
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-linear-to-br from-[#1A1A1A] via-[#0A0A0A] to-[#1A1A1A]" />
+                )}
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+            </motion.div>
 
-             <div className="relative z-10 p-8 flex flex-col md:flex-row justify-between items-end gap-6">
-                <div className="flex items-end gap-6 translate-y-8 md:translate-y-12">
-                    {/* Profile Image */}
-                    <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-[6px] border-[#0a0a0a] overflow-hidden bg-[#111] shrink-0 shadow-2xl">
-                        <Image 
-                            src={profileUser.avatar || "/images/Group 34374.png"} 
-                            alt={profileUser.name}
-                            fill
-                            className="object-cover"
-                        />
-                    </div>
-                    <div className="mb-4 pb-2">
-                        <h1 className="text-4xl md:text-5xl font-preahvihear text-white mb-1 drop-shadow-lg">{profileUser.name}</h1>
-                        <p className="text-white/80 font-dm-sans text-lg drop-shadow-md capitalize">{profileUser.role || 'Creator'}</p>
+            {/* Profile Info Section */}
+            <div className="relative px-6 sm:px-10 -mt-[75px] sm:-mt-[100px] flex flex-col lg:flex-row items-start lg:items-end gap-6 z-10">
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                    <div className="w-[150px] h-[150px] sm:w-[200px] sm:h-[200px] rounded-full p-1.5 bg-[#121212]">
+                        <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-white shadow-2xl">
+                            <Image 
+                                src={profileUser.avatar || "/images/avatar.png"} 
+                                alt={profileUser.name}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="bg-black/40 backdrop-blur-md rounded-2xl p-2 md:p-3 border border-white/5 flex gap-4">
-                        <div className="text-center px-2">
-                            <span className="block text-xl font-bold text-white font-dm-sans">{(profileUser.upvotes || 0)}</span>
-                            <span className="text-xs text-white/50 uppercase tracking-wider font-semibold">Rep</span>
-                        </div>
-                         <div className="w-px bg-white/10" />
-                         <div className="text-center px-2">
-                            <span className="block text-xl font-bold text-white font-dm-sans">{profileUser.locationFlag || "🌍"}</span>
-                            <span className="text-xs text-white/50 uppercase tracking-wider font-semibold">Loc</span>
-                        </div>
-                         <div className="w-px bg-white/10" />
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleUpvoteClick}
-                            className={`flex flex-col items-center justify-center px-2 min-w-[60px] cursor-pointer ${isUpvoted ? 'text-[#7628DB]' : 'text-white/80 hover:text-white'}`}
-                        >
-                             <Triangle size={20} className={`fill-current mb-0.5 ${isUpvoted ? 'rotate-0 text-[#7628DB]' : ''}`} />
-                             <span className="text-xs uppercase tracking-wider font-semibold">{isUpvoted ? 'Upvoted' : 'Upvote'}</span>
-                        </motion.button>
+                {/* Profile Info Content */}
+                <div className="flex-1 w-full lg:w-auto flex flex-col sm:flex-row items-end sm:items-end justify-between gap-6 pb-2">
+                    {/* Name & Desc */}
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#A855F7] tracking-tight">
+                            {profileUser.name}
+                        </h1>
+                        <p className="text-white/60 text-sm sm:text-base font-light capitalize">
+                            {profileUser.role || 'Creator'}
+                        </p>
+                        <p className="text-white/80 text-sm font-medium pt-1">
+                            {profileUser.followersCount || 0} {profileUser.followersCount === 1 ? "Follower" : "Followers"}
+                        </p>
                     </div>
-                    
-                    {!isOwnProfile && (
-                        <Link href={`/messages?userId=${profileUser._id}`}>
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="h-full aspect-square flex items-center justify-center bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl border border-white/5 text-white transition-colors"
-                            >
-                                <MessageSquare size={20} />
-                            </motion.button>
-                        </Link>
-                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-4">
+                        {/* Upvote */}
+                        <div className="flex flex-col items-center gap-1 group cursor-pointer" onClick={handleUpvoteClick}>
+                            <button className={`w-12 h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-colors ${isUpvoted ? 'bg-[#7628DB] text-white' : 'bg-[#1A1A1A] text-white group-hover:bg-[#252525]'}`}>
+                                <span className="font-bold text-lg">{profileUser.upvotes || 0}</span>
+                            </button>
+                            <div className={`flex items-center gap-1 text-[10px] uppercase tracking-wider ${isUpvoted ? 'text-[#7628DB]' : 'text-[#A855F7]'}`}>
+                                <Triangle className={`w-2 h-2 fill-current ${isUpvoted ? 'rotate-0' : 'rotate-180'}`} />
+                                <span>{isUpvoted ? 'Upvoted' : 'Upvote'}</span>
+                            </div>
+                        </div>
+
+                        {/* Location */}
+                        <div className="flex flex-col items-center gap-1 group">
+                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#1A1A1A] border border-white/5 group-hover:bg-[#252525] transition-colors overflow-hidden">
+                                {profileUser.locationFlag ? (
+                                    <span className="text-2xl">{profileUser.locationFlag}</span>
+                                ) : (
+                                    <span className="text-2xl">🌍</span>
+                                )}
+                            </button>
+                            <div className="text-[10px] text-white/40 uppercase tracking-wider">
+                                {profileUser.location?.split(',')[0] || "Location"}
+                            </div>
+                        </div>
+
+                        {/* Gift Token */}
+                        <div className="flex flex-col items-center gap-1 group cursor-pointer">
+                            <button className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#1A1A1A] border border-white/5 text-[#6366f1] group-hover:bg-[#252525] transition-colors">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"/>
+                                </svg>
+                            </button>
+                            <div className="text-[10px] text-white/40 uppercase tracking-wider">Gift Token</div>
+                        </div>
+
+                        {/* Message */}
+                        {!isOwnProfile && (
+                            <Link href={`/messages?userId=${profileUser._id}`} className="flex flex-col items-center gap-1 group cursor-pointer">
+                                <button className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#1A1A1A] border border-white/5 text-white group-hover:bg-[#252525] transition-colors">
+                                    <MessageSquare className="w-5 h-5" />
+                                </button>
+                                <div className="text-[10px] text-white/40 uppercase tracking-wider">Message</div>
+                            </Link>
+                        )}
+
+                        {/* Follow Button */}
+                        {!isOwnProfile && (
+                            <div className="flex flex-col items-center gap-1 group cursor-pointer" onClick={handleFollowClick}>
+                                <button className={`w-12 h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-colors ${isFollowing ? 'bg-[#7628DB] text-white' : 'bg-white/10 text-white group-hover:bg-white/20'}`}>
+                                    {isFollowing ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                                </button>
+                                <div className={`text-[10px] uppercase tracking-wider ${isFollowing ? 'text-[#7628DB]' : 'text-white/40'}`}>
+                                    {isFollowing ? 'Following' : 'Follow'}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
-             </div>
-        </motion.div>
+            </div>
+        </div>
 
         {/* TOP CONTENT GRID (Featured + Info) */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 mb-16 mt-16">
@@ -282,15 +325,7 @@ export default function CreatorPublicProfilePage() {
               transition={{ duration: 0.5, delay: 0.15 }}
               className="bg-[#111] border border-white/5 rounded-[32px] p-6 relative overflow-hidden flex-1 min-h-[200px]"
             >
-               <div className="absolute inset-0 z-0 opacity-10">
-                    <Image
-                        src="/images/Screenshot 2025-06-13 184845 1.png"
-                        alt="Background"
-                        fill
-                        className="object-cover"
-                    />
-                     <div className="absolute inset-0 bg-linear-to-b from-[#111]/80 to-[#111]" />
-               </div>
+               <div className="absolute inset-0 z-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent" />
 
               <div className="relative z-10 h-full flex flex-col">
                 <div className="space-y-6 flex-1">
@@ -408,29 +443,15 @@ export default function CreatorPublicProfilePage() {
                         </div>
                     ))
                 ) : (
-                    // Mock Snapshots if none match - User wants to see this section filled
-                    userGames.length === 0 && [1, 2, 3, 4, 5, 6].map((_, i) => (
-                    <div key={i} className="group relative aspect-video rounded-[24px] overflow-hidden border border-white/10 bg-[#111]">
-                        <Image 
-                            src={`/images/Splash Loading Screen.jpg`} 
-                            alt={`Snapshot ${i}`}
-                            fill
-                            className="object-cover opacity-60 group-hover:opacity-80 transition-opacity"
-                        />
-                        <div className="absolute top-4 left-4 flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-black/50 overflow-hidden relative border border-white/20">
-                                    <Image src={profileUser.avatar || "/images/Group 34374.png"} fill alt="User" className="object-cover" />
+                    userGames.length === 0 && (
+                        <div className="col-span-full py-20 bg-[#111] rounded-[32px] border border-white/5 flex flex-col items-center justify-center text-center">
+                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                <Triangle className="w-8 h-8 text-white/20" />
                             </div>
+                            <h3 className="text-white font-medium text-lg mb-1">Portfolio coming soon</h3>
+                            <p className="text-white/40 text-sm">Stay tuned for amazing work from this {isStudio ? 'Studio' : 'Creator'}.</p>
                         </div>
-                        <div className="absolute inset-x-0 bottom-0 p-4 bg-linear-to-t from-black to-transparent flex justify-between items-center">
-                                <div>
-                                <p className="text-white font-bold text-sm">Portfolio Piece {i+1}</p>
-                                <p className="text-white/40 text-[10px] uppercase tracking-wider">{profileUser.name}</p>
-                                </div>
-                                <button className="bg-[#7628DB] text-white text-[10px] px-3 py-1 rounded-full font-bold uppercase hover:bg-[#6020A0]">Link</button>
-                        </div>
-                    </div>
-                    ))
+                    )
                 )}
             </div>
         </div>

@@ -49,20 +49,24 @@ export default function ProfileHeader() {
   };
   
   // Use Convex storage URLs for images, with fallbacks
-  const coverImageUrl = getValidImageUrl(dbUser.coverImage, "/images/onboarding/sideimageman.jpg");
+  const coverImageUrl = dbUser.coverImage && dbUser.coverImage !== "" && dbUser.coverImage !== "undefined" ? dbUser.coverImage : null;
   const avatarUrl = getValidImageUrl(dbUser.avatar || user?.avatar, "/images/avatar.png");
 
   return (
     <div className="w-full max-w-[1400px] mx-auto pt-24 px-4 sm:px-6 lg:px-8 pb-12">
       {/* Cover Image Container */}
       <div className="relative w-full aspect-21/9 sm:aspect-21/7 rounded-[32px] overflow-hidden bg-[#1A1A1A]">
-        <Image
-          src={coverImageUrl}
-          alt="Cover"
-          fill
-          className="object-cover"
-          priority
-        />
+        {coverImageUrl ? (
+          <Image
+            src={coverImageUrl}
+            alt="Cover"
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <div className="absolute inset-0 bg-linear-to-br from-[#1A1A1A] via-[#0A0A0A] to-[#1A1A1A]" />
+        )}
         
         {/* Gradient Overlay for better text visibility */}
         <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />

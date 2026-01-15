@@ -32,16 +32,13 @@ export default function StudiosPage() {
   };
 
   const item = {
-    hidden: { opacity: 0, scale: 0.9, y: 40 },
+    hidden: { opacity: 0, y: 20 },
     show: { 
       opacity: 1, 
-      scale: 1, 
       y: 0,
       transition: {
-        type: "spring" as const,
-        stiffness: 70,
-        damping: 18,
-        mass: 1
+        duration: 0.4,
+        ease: "easeOut"
       }
     }
   };
@@ -59,15 +56,16 @@ export default function StudiosPage() {
           <DirectoryFilters />
         </div>
         
-        <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {isLoading ? (
              Array.from({ length: 6 }).map((_, i) => (
-               <div key={i} className="h-[302px] rounded-[31px] bg-[#1A1A1A] border border-[#333] animate-pulse" />
+               <motion.div 
+                 key={i} 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.4, delay: i * 0.1 }}
+                 className="h-[302px] rounded-[31px] bg-[#1A1A1A] border border-[#333] animate-pulse" 
+               />
              ))
           ) : studios.length === 0 ? (
              <div className="col-span-full py-20 bg-[#0B0B0B] rounded-[32px] border border-[#222] flex flex-col items-center justify-center text-center">
@@ -79,11 +77,13 @@ export default function StudiosPage() {
              </div>
           ) : (
              studios.map((s, i) => (
-               <Link href={`/profile/${s._id}`} key={i}>
+               <Link href={`/studio/${s._id}`} key={s._id}>
                  <motion.div 
-                   variants={item}
-                   whileHover={{ y: -8, scale: 1.02 }}
-                   className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-[#7628DB]/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(118,40,219,0.1)]"
+                   initial={{ opacity: 0, y: 20 }}
+                   whileInView={{ opacity: 1, y: 0 }}
+                   viewport={{ once: true, margin: "-50px" }}
+                   transition={{ duration: 0.5, delay: i % 3 * 0.1 }}
+                   className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-[#7628DB]/40 transition-all duration-200"
                  >
                    <div className="flex-1 w-full relative rounded-[20px] overflow-hidden bg-white flex items-center justify-center">
                      <Image 
@@ -91,7 +91,7 @@ export default function StudiosPage() {
                        alt={s.name || "Studio"}
                        width={200}
                        height={120}
-                       className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                       className="object-cover w-full h-full"
                      />
                    </div>
                    <div className="h-[57px] px-2 flex items-center justify-between shrink-0">
@@ -165,7 +165,7 @@ export default function StudiosPage() {
                </Link>
              ))
           )}
-        </motion.div>
+        </div>
       </div>
     </main>
   );

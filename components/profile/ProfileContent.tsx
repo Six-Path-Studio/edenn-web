@@ -76,7 +76,7 @@ export default function ProfileContent() {
   };
   
   const avatarUrl = getValidImageUrl(dbUser.avatar || user?.avatar, "/images/avatar.png");
-  const coverImageUrl = getValidImageUrl(dbUser.coverImage, "/images/onboarding/sideimageman.jpg");
+  const coverImageUrl = dbUser.coverImage && dbUser.coverImage !== "" && dbUser.coverImage !== "undefined" ? dbUser.coverImage : null;
   
   // Map socials from Convex schema
   const socialMapping: { key: keyof NonNullable<typeof dbUser.socials>; label: string }[] = [
@@ -127,17 +127,24 @@ export default function ProfileContent() {
               loop={true}
               className="w-full h-full"
             >
-              {[1, 2, 3].map((_, index) => (
+              {[1].map((_, index) => (
                 <SwiperSlide key={index}>
                   <div className="relative w-full h-full bg-[#1A1A1A]">
-                     <Image 
-                        src={coverImageUrl} 
-                        alt="Featured" 
-                        fill 
-                        className="object-cover opacity-80"
-                      />
-                     <div className="absolute inset-0 flex items-center justify-center">
-                        {/* Play button or overlay content could go here */}
+                     {coverImageUrl ? (
+                       <Image 
+                          src={coverImageUrl} 
+                          alt="Featured" 
+                          fill 
+                          className="object-cover opacity-80"
+                        />
+                     ) : (
+                       <div className="absolute inset-0 bg-linear-to-br from-[#1A1A1A] via-[#0A0A0A] to-[#1A1A1A]" />
+                     )}
+                     <div className="absolute inset-0 flex items-center justify-center p-8">
+                        <div className="text-center">
+                           <h3 className="text-white text-2xl font-bold mb-2">Welcome to {displayName}'s Profile</h3>
+                           <p className="text-white/40 text-sm">Explore my creations and projects in the portfolio below.</p>
+                        </div>
                      </div>
                   </div>
                 </SwiperSlide>
@@ -163,13 +170,19 @@ export default function ProfileContent() {
                {userGames.map((game) => (
                   <div key={game._id} className="bg-[#111111] rounded-[24px] p-3 flex flex-col gap-3 group">
                      {/* Card Image */}
-                     <Link href={`/games/${game._id}`} className="relative aspect-4/3 rounded-[20px] overflow-hidden">
-                        <Image 
-                          src={getValidImageUrl(game.coverImage, "/images/onboarding/sideimageman.jpg")} 
-                          alt={game.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                     <Link href={`/games/${game._id}`} className="relative aspect-4/3 rounded-[20px] overflow-hidden bg-[#1A1A1A]">
+                        {game.coverImage ? (
+                          <Image 
+                            src={game.coverImage} 
+                            alt={game.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Triangle className="w-12 h-12 text-white/5" />
+                          </div>
+                        )}
                         <div className="absolute top-3 left-3 flex flex-col items-center gap-1">
                           <button 
                             onClick={(e) => {
