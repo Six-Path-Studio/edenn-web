@@ -7,6 +7,8 @@ import Image from "next/image";
 import Container from "@/components/ui/Container";
 import LogoutModal from "@/components/ui/LogoutModal";
 import { usePathname, useRouter } from "next/navigation";
+import UploadIcon from "@/components/icons/UploadIcon";
+import UpvoteNotificationIcon from "@/components/icons/UpvoteNotificationIcon";
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useQuery, useMutation } from "convex/react";
@@ -196,10 +198,10 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                     
                     {/* Notification Dropdown */}
                     {activeDropdown === "notifications" && (
-                      <div className="absolute top-full right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-4 w-[360px] bg-[#111111] border border-[#222] rounded-[24px] p-0 flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-[100] overflow-hidden">
+                      <div className="absolute top-full right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-4 w-[380px] bg-[#0A0A0A] border border-[#222] rounded-[24px] p-0 flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-[100] overflow-hidden">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-[#222]">
-                          <span className="text-white text-lg font-medium">Notification</span>
+                          <span className="text-white text-lg font-dm-sans">Notification</span>
                           <button 
                             onClick={async () => {
                                 if (user?.id) {
@@ -213,57 +215,53 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                         </div>
                         
                         {/* List */}
-                        <div className="flex flex-col max-h-[400px] overflow-y-auto">
+                        <div className="flex flex-col gap-2 p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
                            {activeNotifications.length === 0 ? (
-                             <div className="px-6 py-8 text-center text-gray-500 text-sm">No new notifications</div>
+                             <div className="px-6 py-8 text-center text-gray-500 text-sm font-dm-sans">No new notifications</div>
                            ) : (
                              activeNotifications.map((notif: any, i: number) => (
-                               <div key={i} className="flex gap-4 px-6 py-4 hover:bg-white/5 transition-colors border-b border-[#222]/50 last:border-0 cursor-pointer">
+                               <div key={i} className="flex gap-4 p-4 bg-[#161618] hover:bg-[#1E1E20] transition-colors rounded-2xl cursor-pointer group">
                                   {/* Icon */}
                                   <div className="shrink-0 mt-1">
-                                    {notif.type === 'upvote' && (
-                                      <div className="w-5 h-5 text-[#4ADE80]">
-                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M12 4L4 20H20L12 4Z" /></svg>
-                                      </div>
+                                    {(notif.type === 'upvote' || notif.type === 'upvote_profile') && (
+                                      <UpvoteNotificationIcon className="w-5 h-5" />
                                     )}
                                     {notif.type === 'upload' && (
-                                        <div className="w-6 h-6 text-[#A855F7] bg-[#A855F7]/10 p-1 rounded-full flex items-center justify-center">
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                        </div>
+                                        <UploadIcon className="w-5 h-5" />
                                     )}
                                     {notif.type === 'follow' && (
-                                        <div className="w-6 h-6 text-[#3B82F6] bg-[#3B82F6]/10 p-1 rounded-full flex items-center justify-center">
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                                        <div className="w-5 h-5 text-[#3B82F6] bg-[#3B82F6]/10 p-1 rounded-full flex items-center justify-center">
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                                         </div>
                                     )}
-                                    {!['upvote', 'upload', 'follow'].includes(notif.type) && (
+                                    {!['upvote', 'upvote_profile', 'upload', 'follow'].includes(notif.type) && (
                                        <div className="w-5 h-5 text-gray-400"><Bell className="w-full h-full" /></div>
                                     )}
                                   </div>
                                   
                                   {/* Content */}
-                                  <div className="flex flex-col gap-1">
-                                    <p className="text-[#D4D4D4] text-sm leading-snug">
-                                      {notif.type === 'upvote' && (
+                                  <div className="flex flex-col gap-1.5 min-w-0">
+                                    <p className="text-[#888] text-sm leading-snug font-dm-sans">
+                                      {(notif.type === 'upvote' || notif.type === 'upvote_profile') && (
                                         <>
-                                          <span className="text-white font-medium">{notif.sender?.name || "Someone"}</span> just sent you an upvote
+                                          <span className="text-white font-semibold">{notif.sender?.name || "Someone"}</span> just sent you an upvote
                                         </>
                                       )}
                                       {notif.type === 'upload' && (
                                         <>
-                                           <span className="text-white font-medium">Your Game</span> has been uploaded successfully
+                                           Your <span className="text-white font-semibold">Game</span> has been uploaded successfully
                                         </>
                                       )}
                                       {notif.type === 'follow' && (
                                           <>
-                                              <span className="text-white font-medium">{notif.sender?.name || "Someone"}</span> started following you
+                                              <span className="text-white font-semibold">{notif.sender?.name || "Someone"}</span> started following you
                                           </>
                                       )}
-                                      {!['upvote', 'upload', 'follow'].includes(notif.type) && (
+                                      {!['upvote', 'upvote_profile', 'upload', 'follow'].includes(notif.type) && (
                                          <span>New notification</span>
                                       )}
                                     </p>
-                                    <span className="text-[#525252] text-xs">
+                                    <span className="text-[#555] text-xs font-dm-sans">
                                       {new Date(notif.createdAt).toLocaleDateString([], { month: '2-digit', day: '2-digit', year: '2-digit' })}, {new Date(notif.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                     </span>
                                   </div>
@@ -370,9 +368,9 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                     </button>
                     {/* Mobile Notification Dropdown */}
                     {activeDropdown === "notifications" && (
-                         <div className="absolute top-full right-0 mt-4 w-[280px] xs:w-[320px] bg-[#111111] border border-[#222] rounded-[24px] overflow-hidden shadow-2xl z-200 animate-in fade-in zoom-in-95 duration-200">
+                         <div className="absolute top-full right-0 mt-4 w-[280px] xs:w-[320px] bg-[#0A0A0A] border border-[#222] rounded-[24px] overflow-hidden shadow-2xl z-200 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-[#222]">
-                                    <span className="text-white text-base font-medium">Notifications</span>
+                                    <span className="text-white text-base font-dm-sans">Notifications</span>
                                     <button 
                                         onClick={async () => {
                                             if (user?.id) {
@@ -384,26 +382,50 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                                         Mark all read
                                     </button>
                                 </div>
-                                <div className="flex flex-col max-h-[300px] overflow-y-auto">
+                                <div className="flex flex-col gap-2 p-3 max-h-[300px] overflow-y-auto custom-scrollbar">
                                     {activeNotifications.length === 0 ? (
-                                        <div className="px-6 py-8 text-center text-gray-500 text-sm">No new notifications</div>
+                                        <div className="px-6 py-8 text-center text-gray-500 text-sm font-dm-sans">No new notifications</div>
                                     ) : (
                                         activeNotifications.map((notif: any, i: number) => (
-                                        <div key={i} className="flex gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-[#222]/50 last:border-0 cursor-pointer text-left">
-                                            <div className="shrink-0 mt-1">
-                                                {notif.type === 'upvote' && <div className="w-4 h-4 text-[#4ADE80]"><svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full"><path d="M12 4L4 20H20L12 4Z" /></svg></div>}
-                                                {notif.type === 'upload' && <div className="w-5 h-5 text-[#A855F7] bg-[#A855F7]/10 p-1 rounded-full flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>}
-                                                {notif.type === 'follow' && <div className="w-5 h-5 text-[#3B82F6] bg-[#3B82F6]/10 p-1 rounded-full flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>}
-                                                {!['upvote', 'upload', 'follow'].includes(notif.type) && <div className="w-4 h-4 text-gray-400"><Bell className="w-full h-full" /></div>}
+                                        <div key={i} className="flex gap-3 p-3 bg-[#161618] hover:bg-[#1E1E20] transition-colors rounded-xl cursor-pointer text-left group">
+                                            <div className="shrink-0 mt-0.5">
+                                                {(notif.type === 'upvote' || notif.type === 'upvote_profile') && (
+                                                  <UpvoteNotificationIcon className="w-4 h-4" />
+                                                )}
+                                                {notif.type === 'upload' && (
+                                                    <UploadIcon className="w-4 h-4" />
+                                                )}
+                                                {notif.type === 'follow' && (
+                                                    <div className="w-4 h-4 text-[#3B82F6] bg-[#3B82F6]/10 p-0.5 rounded-full flex items-center justify-center">
+                                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                                                    </div>
+                                                )}
+                                                {!['upvote', 'upvote_profile', 'upload', 'follow'].includes(notif.type) && (
+                                                   <div className="w-4 h-4 text-gray-400"><Bell className="w-full h-full" /></div>
+                                                )}
                                             </div>
-                                            <div className="flex flex-col gap-0.5 min-w-0">
-                                                <p className="text-[#D4D4D4] text-[13px] leading-snug line-clamp-2">
-                                                    {notif.type === 'upvote' && <><span className="text-white font-medium">{notif.sender?.name || "Someone"}</span> upvoted you</>}
-                                                    {notif.type === 'upload' && <><span className="text-white font-medium">Your Game</span> uploaded</>}
-                                                    {notif.type === 'follow' && <><span className="text-white font-medium">{notif.sender?.name || "Someone"}</span> followed you</>}
-                                                    {!['upvote', 'upload', 'follow'].includes(notif.type) && <span>New notification</span>}
+                                            <div className="flex flex-col gap-1 min-w-0">
+                                                <p className="text-[#888] text-[13px] leading-snug line-clamp-2 font-dm-sans">
+                                                    {(notif.type === 'upvote' || notif.type === 'upvote_profile') && (
+                                                      <>
+                                                        <span className="text-white font-semibold">{notif.sender?.name || "Someone"}</span> just sent you an upvote
+                                                      </>
+                                                    )}
+                                                    {notif.type === 'upload' && (
+                                                      <>
+                                                         Your <span className="text-white font-semibold">Game</span> uploaded successfully
+                                                      </>
+                                                    )}
+                                                    {notif.type === 'follow' && (
+                                                        <>
+                                                            <span className="text-white font-semibold">{notif.sender?.name || "Someone"}</span> followed you
+                                                        </>
+                                                    )}
+                                                    {!['upvote', 'upvote_profile', 'upload', 'follow'].includes(notif.type) && (
+                                                       <span>New notification</span>
+                                                    )}
                                                 </p>
-                                                <span className="text-[#525252] text-[10px]">{new Date(notif.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                                                <span className="text-[#555] text-[10px] font-dm-sans">{new Date(notif.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
                                             </div>
                                         </div>
                                         ))
