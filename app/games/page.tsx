@@ -38,7 +38,7 @@ export default function GamesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white overflow-hidden pt-24">
+    <main className="min-h-screen bg-black text-white overflow-hidden pt-32">
       
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <DirectoryHeader 

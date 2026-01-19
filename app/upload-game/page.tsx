@@ -34,6 +34,12 @@ export default function UploadGamePage() {
 
   const createGame = useMutation(api.games.createGame);
   const dbUser = useQuery(api.users.getUserByEmail, user?.email ? { email: user.email } : "skip");
+  
+  // Role check: Only studios can upload games
+  if (dbUser && dbUser.role === "creator") {
+    router.push("/");
+    return null;
+  }
 
   const [formData, setFormData] = useState<GameFormData>({
     title: "",
@@ -73,13 +79,11 @@ export default function UploadGamePage() {
         coverImage: formData.coverStorageId,
         logoImage: formData.logoStorageId,
         trailerUrl: formData.trailerUrl,
-        creatorId: dbUser._id,
         location: formData.location,
         socials: formData.socials,
         snapshots: formData.snapshots,
         // Default values
         tagline: formData.category, // Using category as tagline for now or could be separate
-        studioId: dbUser.role === "studio" ? dbUser._id : undefined, 
       });
 
       setIsDoneModalOpen(true);

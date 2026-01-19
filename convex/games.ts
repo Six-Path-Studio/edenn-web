@@ -115,8 +115,7 @@ export const createGame = mutation({
     coverImage: v.optional(v.string()),
     logoImage: v.optional(v.string()),
     trailerUrl: v.optional(v.string()),
-    creatorId: v.id("users"),
-    studioId: v.optional(v.id("users")),
+    // creatorId is now derived from identity for security
     location: v.optional(v.string()),
     locationFlag: v.optional(v.string()),
     socials: v.optional(v.object({
@@ -129,8 +128,25 @@ export const createGame = mutation({
     snapshots: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found in database");
+
+    // ROLE SECURITY: Only studios can upload games
+    if (user.role !== "studio") {
+      throw new Error("Unauthorized: Only studios can upload games. Creators should use snapshots.");
+    }
+
     const gameId = await ctx.db.insert("games", {
       ...args,
+      creatorId: user._id, // Securely set from authenticated user
+      studioId: user._id, // For studios, they are their own studio
       upvotes: 0,
       upvotedBy: [],
       featured: false,
@@ -139,7 +155,7 @@ export const createGame = mutation({
 
     // Notify creator of successful upload
     await ctx.scheduler.runAfter(0, internal.notifications.triggerNotification, {
-      recipientId: args.creatorId,
+      recipientId: user._id,
       type: "upload",
       relatedId: gameId,
     });
@@ -152,31 +168,43 @@ export const createGame = mutation({
 export const upvoteGame = mutation({
   args: { 
     gameId: v.id("games"),
-    userId: v.id("users"),
+    // userId is now derived from identity for security
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated to upvote");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
     const game = await ctx.db.get(args.gameId);
     if (!game) throw new Error("Game not found");
 
+    const userId = user._id;
+
     // Check if already upvoted
-    if (game.upvotedBy.includes(args.userId)) {
+    if (game.upvotedBy.includes(userId)) {
       // Remove upvote
       await ctx.db.patch(args.gameId, {
-        upvotes: game.upvotes - 1,
-        upvotedBy: game.upvotedBy.filter((id) => id !== args.userId),
+        upvotes: Math.max(0, game.upvotes - 1),
+        upvotedBy: game.upvotedBy.filter((id) => id !== userId),
       });
     } else {
       // Add upvote
       await ctx.db.patch(args.gameId, {
         upvotes: game.upvotes + 1,
-        upvotedBy: [...game.upvotedBy, args.userId],
+        upvotedBy: [...game.upvotedBy, userId],
       });
 
       // Notify creator (if not self)
-      if (game.creatorId !== args.userId) {
+      if (game.creatorId !== userId) {
         await ctx.scheduler.runAfter(0, internal.notifications.triggerNotification, {
           recipientId: game.creatorId,
-          senderId: args.userId,
+          senderId: userId,
           type: "upvote",
           relatedId: game._id,
         });

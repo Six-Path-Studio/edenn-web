@@ -59,7 +59,7 @@ export default function CreatorPublicProfilePage() {
 
   const performFollow = async () => {
     try {
-        await toggleFollow({ followerId: user!.id as Id<"users">, followingId: profileUser!._id });
+        await toggleFollow({ followingId: profileUser!._id });
         setShowUnfollowModal(false);
         toast.success(isFollowing ? "Unfollowed" : "Followed");
     } catch (err) {
@@ -76,7 +76,7 @@ export default function CreatorPublicProfilePage() {
           setShowUnupvoteModal(true);
       } else {
           try {
-             await toggleProfileUpvote({ userId: user.id as Id<"users">, targetId: profileUser!._id });
+             await toggleProfileUpvote({ targetId: profileUser!._id });
              toast.success("Upvoted!");
           } catch(err) {
              console.error("Upvote error", err);
@@ -88,7 +88,7 @@ export default function CreatorPublicProfilePage() {
   const performUnUpvote = async () => {
       if (!user || !profileUser) return;
       try {
-          await toggleProfileUpvote({ userId: user.id as Id<"users">, targetId: profileUser._id });
+          await toggleProfileUpvote({ targetId: profileUser._id });
           toast.success("Removed upvote");
           setShowUnupvoteModal(false);
       } catch(err) {
@@ -146,7 +146,7 @@ export default function CreatorPublicProfilePage() {
         confirmText="Remove Upvote"
       />
 
-      <Container className="pt-24 pb-20">
+      <Container className="pt-32 pb-20">
         
         {/* HERO SECTION / PROFILE HEADER */}
         <div className="w-full relative mb-12">
@@ -408,26 +408,7 @@ export default function CreatorPublicProfilePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* SHOW GAMES IF ANY */}
-                {userGames.map((game) => (
-                        <Link href={`/games/${game._id}`} key={game._id} className="group block relative aspect-video rounded-[24px] overflow-hidden border border-white/10">
-                            <Image 
-                            src={getImageUrl(game.coverImage)} 
-                            alt={game.title} 
-                            fill 
-                            className="object-cover transition-transform duration-500 group-hover:scale-105" 
-                            />
-                            <div className="absolute inset-x-0 bottom-0 p-6 bg-linear-to-t from-black via-black/80 to-transparent flex items-end justify-between">
-                                <div>
-                                    <h3 className="text-white font-bold text-lg font-dm-sans">{game.title}</h3>
-                                    <p className="text-white/50 text-xs">{profileUser.name}</p>
-                                </div>
-                                <div className="bg-[#7628DB] text-white text-xs px-3 py-1 rounded-full font-bold uppercase">View</div>
-                            </div>
-                        </Link>
-                ))}
-
-                {/* SHOW SNAPSHOTS */}
+                {/* SHOW SNAPSHOTS ONLY FOR CREATORS */}
                 {(profileUser.snapshots && profileUser.snapshots.length > 0) ? (
                     profileUser.snapshots.map((snap, i) => (
                         <div key={i} className="group block relative aspect-video rounded-[24px] overflow-hidden border border-white/10">
@@ -443,15 +424,13 @@ export default function CreatorPublicProfilePage() {
                         </div>
                     ))
                 ) : (
-                    userGames.length === 0 && (
-                        <div className="col-span-full py-20 bg-[#111] rounded-[32px] border border-white/5 flex flex-col items-center justify-center text-center">
-                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                <Triangle className="w-8 h-8 text-white/20" />
-                            </div>
-                            <h3 className="text-white font-medium text-lg mb-1">Portfolio coming soon</h3>
-                            <p className="text-white/40 text-sm">Stay tuned for amazing work from this {isStudio ? 'Studio' : 'Creator'}.</p>
+                    <div className="col-span-full py-20 bg-[#111] rounded-[32px] border border-white/5 flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                            <Triangle className="w-8 h-8 text-white/20" />
                         </div>
-                    )
+                        <h3 className="text-white font-medium text-lg mb-1">Portfolio coming soon</h3>
+                        <p className="text-white/40 text-sm">Stay tuned for amazing work from this {isStudio ? 'Studio' : 'Creator'}.</p>
+                    </div>
                 )}
             </div>
         </div>

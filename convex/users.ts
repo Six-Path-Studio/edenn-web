@@ -48,7 +48,8 @@ export const getUser = query({
         }));
     }
 
-    return { ...user, avatar: avatarUrl, coverImage: coverImageUrl, snapshots, followersCount };
+    const { tokenIdentifier, email, notificationPreferences, ...safeUser } = user;
+    return { ...safeUser, avatar: avatarUrl, coverImage: coverImageUrl, snapshots, followersCount };
   },
 });
 
@@ -101,12 +102,13 @@ export const getUserByToken = query({
         }));
     }
 
-    return { ...user, avatar: avatarUrl, coverImage: coverImageUrl, snapshots, followersCount };
+    const { tokenIdentifier, email, notificationPreferences, ...safeUser } = user;
+    return { ...safeUser, avatar: avatarUrl, coverImage: coverImageUrl, snapshots, followersCount };
   },
 });
 
-// Helper to resolve user images
-const resolveUserImages = async (ctx: any, user: any) => {
+// Helper to resolve user images and sanitize data
+const resolvePublicUser = async (ctx: any, user: any) => {
   let avatarUrl = user.avatar;
   if (user.avatar && !user.avatar.startsWith("http") && !user.avatar.startsWith("/")) {
     try {
@@ -138,36 +140,33 @@ const resolveUserImages = async (ctx: any, user: any) => {
       }));
   }
 
-  return { ...user, avatar: avatarUrl, coverImage: coverImageUrl, snapshots };
+  // Sanitization: Exclude sensitive fields
+  const { tokenIdentifier, email, notificationPreferences, ...publicData } = user;
+  
+  return { ...publicData, avatar: avatarUrl, coverImage: coverImageUrl, snapshots };
 };
 
 // Get all creators
 export const getCreators = query({
   handler: async (ctx) => {
-    // Fetch ALL users first
     const users = await ctx.db.query("users").collect();
-
-    // Filter and sort by upvotes (descending)
     const creators = users
       .filter((u) => u.role === "creator")
       .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
 
-    return Promise.all(creators.map(user => resolveUserImages(ctx, user)));
+    return Promise.all(creators.map(user => resolvePublicUser(ctx, user)));
   },
 });
 
 // Get all studios
 export const getStudios = query({
   handler: async (ctx) => {
-    // Fetch ALL users first to debug/ensure we get data
     const users = await ctx.db.query("users").collect();
-
-    // Filter and sort by upvotes (descending)
     const studios = users
       .filter((u) => u.role === "studio")
       .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
 
-    return Promise.all(studios.map(user => resolveUserImages(ctx, user)));
+    return Promise.all(studios.map(user => resolvePublicUser(ctx, user)));
   },
 });
 
@@ -175,13 +174,12 @@ export const getStudios = query({
 export const getFeaturedCreators = query({
   handler: async (ctx) => {
     const users = await ctx.db.query("users").collect();
-    
     const creators = users
       .filter((u) => u.role === "creator")
       .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))
       .slice(0, 3);
       
-    return Promise.all(creators.map(user => resolveUserImages(ctx, user)));
+    return Promise.all(creators.map(user => resolvePublicUser(ctx, user)));
   },
 });
 
@@ -189,13 +187,12 @@ export const getFeaturedCreators = query({
 export const getFeaturedStudios = query({
   handler: async (ctx) => {
     const users = await ctx.db.query("users").collect();
-    
     const studios = users
       .filter((u) => u.role === "studio")
       .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))
       .slice(0, 3);
 
-    return Promise.all(studios.map(user => resolveUserImages(ctx, user)));
+    return Promise.all(studios.map(user => resolvePublicUser(ctx, user)));
   },
 });
 
@@ -203,7 +200,7 @@ export const getFeaturedStudios = query({
 export const getAllUsers = query({
   handler: async (ctx) => {
     const users = await ctx.db.query("users").collect();
-    return Promise.all(users.map(user => resolveUserImages(ctx, user)));
+    return Promise.all(users.map(user => resolvePublicUser(ctx, user)));
   },
 });
 
@@ -217,20 +214,8 @@ export const createUser = mutation({
     tokenIdentifier: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Check if user exists
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .first();
-
-    if (existingUser) {
-      return existingUser._id;
-    }
-
-    return await ctx.db.insert("users", {
-      ...args,
-      createdAt: Date.now(),
-    });
+    // SECURITY: This mutation is deprecated/insecure. Use api.auth.storeUser or strictly server-side logic.
+    throw new Error("This mutation is deprecated. Please use the appropriate auth flow.");
   },
 });
 
@@ -387,17 +372,27 @@ export const updateNotificationPreferences = mutation({
 
 export const toggleFollow = mutation({
   args: {
-    followerId: v.id("users"),
     followingId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    if (args.followerId === args.followingId) {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+    const followerId = user._id;
+
+    if (followerId === args.followingId) {
        throw new Error("Cannot follow yourself");
     }
 
     const existingFollow = await ctx.db
       .query("follows")
-      .withIndex("by_both", (q) => q.eq("followerId", args.followerId).eq("followingId", args.followingId))
+      .withIndex("by_both", (q) => q.eq("followerId", followerId).eq("followingId", args.followingId))
       .first();
 
     if (existingFollow) {
@@ -407,7 +402,7 @@ export const toggleFollow = mutation({
     } else {
       // Follow
       await ctx.db.insert("follows", {
-        followerId: args.followerId,
+        followerId: followerId,
         followingId: args.followingId,
         createdAt: Date.now(),
       });
@@ -415,7 +410,7 @@ export const toggleFollow = mutation({
       // Trigger Notification
       await ctx.scheduler.runAfter(0, internal.notifications.triggerNotification, {
         recipientId: args.followingId,
-        senderId: args.followerId,
+        senderId: followerId,
         type: "follow",
       });
 
@@ -440,30 +435,40 @@ export const isFollowing = query({
 
 export const toggleUpvoteProfile = mutation({
   args: {
-    userId: v.id("users"), // The user doing the upvoting (or from auth)
     targetId: v.id("users"), // The profile being upvoted
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+    const userId = user._id;
+
     const targetUser = await ctx.db.get(args.targetId);
     if (!targetUser) throw new Error("User not found");
 
     const upvotedBy = targetUser.upvotedBy || [];
-    const hasUpvoted = upvotedBy.includes(args.userId);
+    const hasUpvoted = upvotedBy.includes(userId);
 
     let newUpvotedBy;
     let newUpvotes = targetUser.upvotes || 0;
 
     if (hasUpvoted) {
-      newUpvotedBy = upvotedBy.filter((id) => id !== args.userId);
+      newUpvotedBy = upvotedBy.filter((id) => id !== userId);
       newUpvotes = Math.max(0, newUpvotes - 1);
     } else {
-      newUpvotedBy = [...upvotedBy, args.userId];
+      newUpvotedBy = [...upvotedBy, userId];
       newUpvotes = newUpvotes + 1;
 
         // Trigger Notification
         await ctx.scheduler.runAfter(0, internal.notifications.triggerNotification, {
             recipientId: args.targetId,
-            senderId: args.userId,
+            senderId: userId,
             type: "upvote_profile",
         });
     }

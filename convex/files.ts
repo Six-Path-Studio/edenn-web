@@ -23,6 +23,21 @@ export const saveGameCoverImage = mutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    if (!user || user._id !== game.creatorId) {
+       throw new Error("Unauthorized");
+    }
+
     const url = await ctx.storage.getUrl(args.storageId);
     if (!url) throw new Error("Failed to get file URL");
     await ctx.db.patch(args.gameId, {
@@ -39,6 +54,21 @@ export const saveGameLogoImage = mutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    if (!user || user._id !== game.creatorId) {
+       throw new Error("Unauthorized");
+    }
+
     const url = await ctx.storage.getUrl(args.storageId);
     if (!url) throw new Error("Failed to get file URL");
     await ctx.db.patch(args.gameId, {
@@ -55,6 +85,21 @@ export const saveGameTrailer = mutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    const game = await ctx.db.get(args.gameId);
+    if (!game) throw new Error("Game not found");
+
+    if (!user || user._id !== game.creatorId) {
+       throw new Error("Unauthorized");
+    }
+
     const url = await ctx.storage.getUrl(args.storageId);
     if (!url) throw new Error("Failed to get file URL");
     await ctx.db.patch(args.gameId, {
@@ -71,10 +116,23 @@ export const addGameSnapshot = mutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
-    const url = await ctx.storage.getUrl(args.storageId);
-    if (!url) throw new Error("Failed to get file URL");
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
     const game = await ctx.db.get(args.gameId);
     if (!game) throw new Error("Game not found");
+
+    if (!user || user._id !== game.creatorId) {
+       throw new Error("Unauthorized");
+    }
+
+    const url = await ctx.storage.getUrl(args.storageId);
+    if (!url) throw new Error("Failed to get file URL");
 
     const currentSnapshots = game.snapshots || [];
     await ctx.db.patch(args.gameId, {

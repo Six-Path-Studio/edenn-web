@@ -27,7 +27,7 @@ function MessagesContent() {
   const router = useRouter();
   const userIdParam = searchParams.get("userId");
   
-  const conversations = useQuery(api.messages.getConversations, user?.id ? { userId: user.id as string } : "skip") || [];
+  const conversations = useQuery(api.messages.getConversations, isAuthenticated ? {} : "skip") || [];
   const allUsers = useQuery(api.users.getAllUsers) || [];
   
   const [selectedConversationId, setSelectedConversationId] = useState<Id<"conversations"> | null>(null);
@@ -118,7 +118,6 @@ function MessagesContent() {
 
     setTypingStatus({
       conversationId: selectedConversationId,
-      userId: user.id as Id<"users">,
       isTyping: true,
     });
 
@@ -175,7 +174,7 @@ function MessagesContent() {
         setPendingMessages(prev => [...prev, {
             _id: tempId,
             conversationId: selectedConversationId,
-            senderId: user.id,
+            senderId: user.id, // Keep for local rendering
             text,
             imageUrl: currentFile?.type === 'image' ? currentFile.url : undefined,
             attachmentUrl: currentFile?.type === 'file' ? '#' : undefined,
@@ -190,7 +189,6 @@ function MessagesContent() {
           // Editing existing message (Text only for now)
           await editMessage({
               messageId: editingId,
-              userId: user.id as Id<"users">,
               text
           });
       } else {
@@ -245,7 +243,6 @@ function MessagesContent() {
         // B. Send Message Mutation
         await sendMessage({
             conversationId: selectedConversationId,
-            senderId: user.id as Id<"users">,
             text,
             imageUrl: currentFile?.type === 'image' ? storageId : undefined,
             attachmentUrl: currentFile?.type === 'file' ? storageId : undefined,
@@ -270,7 +267,6 @@ function MessagesContent() {
      if (!user?.id) return;
      try {
         const conversationId = await getOrCreateConversation({ 
-            currentUserId: user.id as Id<"users">,
             opponentId: targetUserId 
         });
         setSelectedConversationId(conversationId);
@@ -470,8 +466,8 @@ function MessagesContent() {
                        </AnimatePresence>
                        <button 
                          onClick={async () => {
-                             if (!user?.id || !otherUser?._id) return;
-                             await toggleUpvote({ userId: user.id as Id<"users">, targetId: otherUser._id });
+                             if (!otherUser?._id) return;
+                             await toggleUpvote({ targetId: otherUser._id });
                          }}
                          className={`h-10 px-3 md:px-4 rounded-full flex items-center gap-1.5 md:gap-2 transition-colors text-xs md:text-sm font-bold shrink-0 ${
                              otherUser?.upvotedBy?.some((id: any) => id === user?.id)
@@ -555,7 +551,7 @@ function MessagesContent() {
                                                         e.stopPropagation();
                                                         if (!user?.id) return;
                                                         try {
-                                                            await deleteMessage({ messageId: msg._id, userId: user.id as Id<"users"> });
+                                                            await deleteMessage({ messageId: msg._id });
                                                             toast.success("Message deleted");
                                                         } catch(err) {
                                                             toast.error("Failed to delete");

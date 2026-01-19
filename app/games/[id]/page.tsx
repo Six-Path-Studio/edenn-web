@@ -133,7 +133,7 @@ export default function GameProfilePage() {
   const handleUpvote = async () => {
     if (!currentUser) return;
     try {
-      await upvoteGame({ gameId, userId: currentUser._id });
+      await upvoteGame({ gameId });
     } catch (error) {
       console.error("Failed to upvote:", error);
     }
@@ -162,7 +162,7 @@ export default function GameProfilePage() {
   const isUpvoted = currentUser && game.upvotedBy?.includes(currentUser._id);
 
   return (
-    <main className="min-h-screen bg-background text-foreground pt-24">
+    <main className="min-h-screen bg-background text-foreground pt-32">
 
       <Container className="pt-24 pb-20">
         {/* Game Header */}

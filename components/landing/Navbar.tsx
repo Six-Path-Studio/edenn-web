@@ -310,9 +310,11 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                 {/* User Dropdown */}
                 {activeDropdown === "user" && (
                   <div className="absolute top-full right-0 mt-4 w-[200px] bg-[#111111] border border-[#222] rounded-[24px] p-2 flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                    <Link href="/upload-game" className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
-                      Upload
-                    </Link>
+                    {dbUser?.role?.toLowerCase() === "studio" && (
+                      <Link href="/upload-game" className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
+                        Upload
+                      </Link>
+                    )}
                     <Link href="/profile" className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
                       Profile
                     </Link>
@@ -452,9 +454,11 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                     </button>
                     {activeDropdown === "user" && (
                          <div className="absolute top-full right-0 mt-4 w-[200px] bg-[#111111] border border-[#222] rounded-[24px] p-2 flex flex-col shadow-2xl z-200 animate-in fade-in zoom-in-95 duration-200">
-                            <Link href="/upload-game" onClick={() => setActiveDropdown(null)} className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
-                            Upload
-                            </Link>
+                            {dbUser?.role?.toLowerCase() === "studio" && (
+                              <Link href="/upload-game" onClick={() => setActiveDropdown(null)} className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
+                                Upload
+                              </Link>
+                            )}
                             <Link href="/profile" onClick={() => setActiveDropdown(null)} className="text-white/80 hover:text-white hover:bg-white/5 px-4 py-3 rounded-[16px] text-sm font-medium transition-colors">
                             Profile
                             </Link>

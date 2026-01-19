@@ -59,7 +59,7 @@ export default function StudioProfilePage() {
 
   const performFollow = async () => {
     try {
-        await toggleFollow({ followerId: user!.id as Id<"users">, followingId: profileUser!._id });
+        await toggleFollow({ followingId: profileUser!._id });
         setShowUnfollowModal(false);
         toast.success(isFollowing ? "Unfollowed" : "Followed");
     } catch (err) {
@@ -76,7 +76,7 @@ export default function StudioProfilePage() {
           setShowUnupvoteModal(true);
       } else {
           try {
-             await toggleProfileUpvote({ userId: user.id as Id<"users">, targetId: profileUser!._id });
+             await toggleProfileUpvote({ targetId: profileUser!._id });
              toast.success("Upvoted!");
           } catch(err) {
              console.error("Upvote error", err);
@@ -88,7 +88,7 @@ export default function StudioProfilePage() {
   const performUnUpvote = async () => {
       if (!user || !profileUser) return;
       try {
-          await toggleProfileUpvote({ userId: user.id as Id<"users">, targetId: profileUser._id });
+          await toggleProfileUpvote({ targetId: profileUser._id });
           toast.success("Removed upvote");
           setShowUnupvoteModal(false);
       } catch(err) {
@@ -146,7 +146,7 @@ export default function StudioProfilePage() {
         confirmText="Remove Upvote"
       />
 
-      <Container className="pt-24 pb-20">
+      <Container className="pt-32 pb-20">
         
         {/* HERO SECTION / PROFILE HEADER */}
         <div className="w-full relative mb-12">

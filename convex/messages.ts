@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 
-// Helper to resolve user images
+// Helper to resolve user images and sanitize
 const resolveUser = async (ctx: any, user: any) => {
   if (!user) return null;
   let avatarUrl = user.avatar;
@@ -11,23 +11,39 @@ const resolveUser = async (ctx: any, user: any) => {
     try {
       const url = await ctx.storage.getUrl(user.avatar as Id<"_storage">);
       if (url) avatarUrl = url;
-    } catch (e) {
-      // Keep original or fallback
-    }
+    } catch (e) {}
   }
-  return { ...user, avatar: avatarUrl };
+  
+  // Sanitization: Only return fields needed for chat
+  return { 
+    _id: user._id,
+    name: user.name,
+    avatar: avatarUrl,
+    role: user.role
+  };
 };
 
 // Get messages for a conversation
 export const getMessages = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return [];
 
-    // In a real secure app, we should verify the user's session here.
-    // However, since identity is managed via tokenIdentifier in other modules,
-    // we should at least check if conversation participants is being queried correctly.
+    // SECURITY: Verify user is a participant
+    if (!conversation.participants.includes(user._id)) {
+      throw new Error("Unauthorized: You are not a participant in this conversation");
+    }
     
     const messages = await ctx.db
       .query("messages")
@@ -67,26 +83,34 @@ export const getMessages = query({
 export const sendMessage = mutation({
   args: {
     conversationId: v.id("conversations"),
-    senderId: v.id("users"),
     text: v.string(),
     imageUrl: v.optional(v.id("_storage")),
     attachmentUrl: v.optional(v.id("_storage")),
     attachmentName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Determine preview text for conversation
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+    const senderId = user._id;
+
     const displayMessage = args.text || (args.imageUrl ? "Sent an image" : args.attachmentName ? `Sent: ${args.attachmentName}` : "New message");
 
-    // Validate conversation and participants
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) throw new Error("Conversation not found");
-    if (!conversation.participants.includes(args.senderId)) {
+    if (!conversation.participants.includes(senderId)) {
         throw new Error("Unauthorized: You are not a participant in this conversation");
     }
 
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
-      senderId: args.senderId,
+      senderId: senderId,
       text: args.text,
       imageUrl: args.imageUrl,
       attachmentUrl: args.attachmentUrl,
@@ -94,10 +118,9 @@ export const sendMessage = mutation({
       createdAt: Date.now(),
     });
 
-    // Update conversation's last message, clear typing for sender
     let typing = conversation.typing || {};
-    if (typing[args.senderId]) {
-      delete typing[args.senderId];
+    if (typing[senderId]) {
+      delete typing[senderId];
     }
 
     await ctx.db.patch(args.conversationId, {
@@ -106,21 +129,14 @@ export const sendMessage = mutation({
       typing,
     });
 
-    // Notify other participants
-    // Reuse the 'conversation' fetched above (line 46)
-    if (conversation) {
-      for (const participantId of conversation.participants) {
-        if (participantId !== args.senderId) {
-          // Check if "active" - straightforward heuristic: if they are typing, skip? 
-          // Or just notify. A proper "lastSeen" on conversation would be best, but out of scope.
-          // Let's trigger it.
-          await ctx.scheduler.runAfter(0, internal.notifications.triggerNotification, {
-            recipientId: participantId,
-            senderId: args.senderId,
-            type: "message",
-            relatedId: args.conversationId, // Point to Conversation ID for grouping
-          });
-        }
+    for (const participantId of conversation.participants) {
+      if (participantId !== senderId) {
+        await ctx.scheduler.runAfter(0, internal.notifications.triggerNotification, {
+          recipientId: participantId,
+          senderId: senderId,
+          type: "message",
+          relatedId: args.conversationId,
+        });
       }
     }
 
@@ -128,28 +144,37 @@ export const sendMessage = mutation({
   },
 });
 
-// Update typing status
 export const setTypingStatus = mutation({
   args: {
     conversationId: v.id("conversations"),
-    userId: v.id("users"),
     isTyping: v.boolean(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) return;
+    const userId = user._id;
+
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return;
 
-    if (!conversation.participants.includes(args.userId)) {
+    if (!conversation.participants.includes(userId)) {
         throw new Error("Unauthorized");
     }
 
     let typing = conversation.typing || {};
     
     if (args.isTyping) {
-      typing = { ...typing, [args.userId]: Date.now() };
+      typing = { ...typing, [userId]: Date.now() };
     } else {
       const newTyping = { ...typing };
-      delete newTyping[args.userId];
+      delete newTyping[userId];
       typing = newTyping;
     }
 
@@ -159,18 +184,26 @@ export const setTypingStatus = mutation({
 
 // Get user's conversations
 export const getConversations = query({
-  args: { userId: v.optional(v.string()) }, // Accept string to handle potential format mismatch, verify later
-  handler: async (ctx, args) => {
-    if (!args.userId) return [];
-    
-    // Normalize ID check
-    // In Convex, v.id() is best, but if we pass string from localstorage, we might need to cast or simple compare
-    // Let's assume the client passes a valid ID string that matches
-    
+  args: {}, 
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) return [];
+    const userId = user._id;
+
+    // Use collect() for now since conversations are relatively few per user.
+    // In a massive scale app, we would use a join table or better indexing.
     const allConversations = await ctx.db.query("conversations").collect();
     
+    // Filter conversations where the user is a participant
     const userConversations = allConversations.filter((conv) =>
-      conv.participants.some(p => p.toString() === args.userId)
+      conv.participants.includes(userId)
     );
 
     // Sort by lastMessageAt (newest first)
@@ -179,7 +212,7 @@ export const getConversations = query({
     // Get unread counts
     const unreadNotifications = await ctx.db
       .query("notifications")
-      .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId as Id<"users">).eq("read", false))
+      .withIndex("by_recipient_unread", (q) => q.eq("recipientId", userId).eq("read", false))
       .collect();
 
     const unreadMap = new Map<string, number>();
@@ -193,11 +226,11 @@ export const getConversations = query({
     // Enrich with participant info & unread count
     return Promise.all(
       userConversations.map(async (conv) => {
-        const otherParticipantIds = conv.participants.filter(id => id.toString() !== args.userId);
+        const otherParticipantIds = conv.participants.filter(id => id !== userId);
         const otherParticipants = await Promise.all(
           otherParticipantIds.map((id) => ctx.db.get(id))
         );
-        // Resolve images
+        // Resolve images and sanitize participant info
         const resolvedOtherParticipants = await Promise.all(otherParticipants.map(p => resolveUser(ctx, p)));
         
         return { 
@@ -214,26 +247,32 @@ export const getConversations = query({
 // Get or Create conversation (idempotent)
 export const getOrCreateConversation = mutation({
   args: {
-    currentUserId: v.id("users"),
     opponentId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+    const currentUserId = user._id;
+
     // Check if conversation exists
     const allConversations = await ctx.db.query("conversations").collect();
     const existing = allConversations.find(c => 
       c.participants.length === 2 && 
-      c.participants.includes(args.currentUserId) && 
+      c.participants.includes(currentUserId) && 
       c.participants.includes(args.opponentId)
     );
 
     if (existing) return existing._id;
 
     return await ctx.db.insert("conversations", {
-      participants: [args.currentUserId, args.opponentId],
-      createdAt: Date.now(),
-    });
-    return await ctx.db.insert("conversations", {
-      participants: [args.currentUserId, args.opponentId],
+      participants: [currentUserId, args.opponentId],
       createdAt: Date.now(),
     });
   },
@@ -242,13 +281,22 @@ export const getOrCreateConversation = mutation({
 export const editMessage = mutation({
   args: {
     messageId: v.id("messages"),
-    userId: v.id("users"),
     text: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
-    if (message.senderId !== args.userId) throw new Error("Unauthorized");
+    if (message.senderId !== user._id) throw new Error("Unauthorized");
 
     await ctx.db.patch(args.messageId, {
       text: args.text,
@@ -259,29 +307,33 @@ export const editMessage = mutation({
 export const deleteMessage = mutation({
   args: {
     messageId: v.id("messages"),
-    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
     const message = await ctx.db.get(args.messageId);
-    if (!message) return; // Already deleted or not found
-    if (message.senderId !== args.userId) throw new Error("Unauthorized");
+    if (!message) return;
+    if (message.senderId !== user._id) throw new Error("Unauthorized");
 
     await ctx.db.delete(args.messageId);
 
-    // Update conversation last message if needed
-    // We fetch the *new* last message to keep state consistent
     const lastMsg = await ctx.db
         .query("messages")
         .withIndex("by_conversation", (q) => q.eq("conversationId", message.conversationId))
-        .order("desc") // timestamp desc (implicit or by creation time?)
-        // Convex ID sort is creation time. So order("desc") generally works for chronological last.
-        // Wait, "by_conversation" index is just ["conversationId"]. 
-        // We can explicit sort by creation time if we collect, but `order("desc")` on standard query uses system creation time order reversed.
+        .order("desc")
         .first();
 
     await ctx.db.patch(message.conversationId, {
         lastMessage: lastMsg ? lastMsg.text : "",
-        lastMessageAt: lastMsg ? lastMsg.createdAt : undefined, // or keep existing? Better to update.
+        lastMessageAt: lastMsg ? lastMsg.createdAt : undefined,
     });
   },
 });
