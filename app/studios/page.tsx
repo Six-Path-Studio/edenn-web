@@ -115,7 +115,7 @@ export default function StudiosPage() {
                              if (!user?.id) return toast.error("Please sign in to upvote.");
                              
                              try {
-                                 await toggleUpvote({ userId: user.id as Id<"users">, targetId: s._id });
+                                await toggleUpvote({ targetId: s._id });
                              } catch (err) {
                                  console.error(err);
                              }
@@ -145,7 +145,6 @@ export default function StudiosPage() {
                            
                            try {
                                await toggleFollow({ 
-                                   followerId: user.id as Id<"users">, 
                                    followingId: s._id 
                                });
                            } catch (err: any) {

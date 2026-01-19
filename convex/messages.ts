@@ -19,7 +19,9 @@ const resolveUser = async (ctx: any, user: any) => {
     _id: user._id,
     name: user.name,
     avatar: avatarUrl,
-    role: user.role
+    role: user.role,
+    upvotes: user.upvotes,
+    upvotedBy: user.upvotedBy,
   };
 };
 

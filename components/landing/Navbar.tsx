@@ -207,7 +207,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                           <button 
                             onClick={async () => {
                                 if (user?.id) {
-                                    await markNotificationsAsRead({ userId: user.id as any });
+                                    await markNotificationsAsRead({});
                                 }
                             }}
                             className="text-[#7628DB] text-sm hover:text-white transition-colors font-medium"
@@ -378,7 +378,7 @@ export default function Navbar({ isLoggedIn = false }: NavbarProps) {
                                     <button 
                                         onClick={async () => {
                                             if (user?.id) {
-                                                await markNotificationsAsRead({ userId: user.id as any });
+                                                await markNotificationsAsRead({});
                                             }
                                         }}
                                         className="text-[#7628DB] text-xs hover:text-white transition-colors font-medium"

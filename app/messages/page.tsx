@@ -85,7 +85,7 @@ function MessagesContent() {
   // Mark CURRENT conversation as read when selected or messages update
   useEffect(() => {
     if (selectedConversationId && user?.id && messages) {
-       markConversationAsRead({ userId: user.id as Id<"users">, conversationId: selectedConversationId });
+       markConversationAsRead({ conversationId: selectedConversationId });
     }
   }, [selectedConversationId, user?.id, messages, markConversationAsRead]);
   
@@ -128,7 +128,6 @@ function MessagesContent() {
     typingTimeoutRef.current = setTimeout(() => {
       setTypingStatus({
         conversationId: selectedConversationId,
-        userId: user.id as Id<"users">,
         isTyping: false,
       });
     }, 2000);

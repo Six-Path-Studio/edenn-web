@@ -26,7 +26,7 @@ export function GameCard({ id, image, title, studio }: GameCardProps) {
     e.preventDefault();
     if (!currentUser) return;
     try {
-      await upvoteGame({ gameId: id as any, userId: currentUser._id });
+      await upvoteGame({ gameId: id as any });
     } catch (error) {
       console.error("Failed to upvote:", error);
     }

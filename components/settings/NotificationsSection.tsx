@@ -41,7 +41,6 @@ export default function NotificationsSection() {
     if (dbUser?._id) {
         try {
             await updatePreferences({
-                userId: dbUser._id,
                 preferences: {
                     emailUpvotes: newSettings.upvote,
                     emailMessages: newSettings.messages,

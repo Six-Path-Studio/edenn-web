@@ -355,7 +355,7 @@ export const getUserByEmail = query({
 
 export const updateNotificationPreferences = mutation({
   args: {
-    userId: v.id("users"),
+    // userId derived from auth
     preferences: v.object({
       emailUpvotes: v.boolean(),
       emailMessages: v.boolean(),
@@ -364,7 +364,17 @@ export const updateNotificationPreferences = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    await ctx.db.patch(user._id, {
       notificationPreferences: args.preferences,
     });
   },

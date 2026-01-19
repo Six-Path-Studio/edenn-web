@@ -171,11 +171,21 @@ export const getNotifications = query({
 
 // Mark all as read
 export const markAllAsRead = mutation({
-    args: { userId: v.id("users") },
-    handler: async (ctx, args) => {
+    args: {},
+    handler: async (ctx) => {
+       const identity = await ctx.auth.getUserIdentity();
+       if (!identity) throw new Error("Unauthenticated");
+
+       const user = await ctx.db
+          .query("users")
+          .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+          .first();
+
+       if (!user) throw new Error("User not found");
+
        const unread = await ctx.db
          .query("notifications")
-         .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId).eq("read", false))
+         .withIndex("by_recipient_unread", (q) => q.eq("recipientId", user._id).eq("read", false))
          .collect();
        
        await Promise.all(unread.map(n => ctx.db.patch(n._id, { read: true })));
@@ -184,11 +194,21 @@ export const markAllAsRead = mutation({
 
 // Mark messages as read
 export const markMessagesAsRead = mutation({
-    args: { userId: v.id("users") },
-    handler: async (ctx, args) => {
+    args: {},
+    handler: async (ctx) => {
+       const identity = await ctx.auth.getUserIdentity();
+       if (!identity) throw new Error("Unauthenticated");
+
+       const user = await ctx.db
+          .query("users")
+          .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+          .first();
+
+       if (!user) throw new Error("User not found");
+
        const unread = await ctx.db
          .query("notifications")
-         .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId).eq("read", false))
+         .withIndex("by_recipient_unread", (q) => q.eq("recipientId", user._id).eq("read", false))
          .collect();
        
        const messageNotifications = unread.filter(n => n.type === "message");
@@ -200,11 +220,21 @@ export const markMessagesAsRead = mutation({
 
 // Mark messages specifically for a conversation as read
 export const markConversationAsRead = mutation({
-    args: { userId: v.id("users"), conversationId: v.id("conversations") },
+    args: { conversationId: v.id("conversations") },
     handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) throw new Error("Unauthenticated");
+
+        const user = await ctx.db
+           .query("users")
+           .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+           .first();
+
+        if (!user) throw new Error("User not found");
+
         const unread = await ctx.db
             .query("notifications")
-            .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId).eq("read", false))
+            .withIndex("by_recipient_unread", (q) => q.eq("recipientId", user._id).eq("read", false))
             .collect();
 
         // Filter for messages related to this conversation
@@ -296,8 +326,8 @@ export const getUnreadNotificationCount = query({
 });
 
 export const markNotificationsAsRead = mutation({
-    args: { userId: v.id("users") },
-    handler: async (ctx, args) => {
+    args: {},
+    handler: async (ctx) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) throw new Error("Unauthenticated");
 
@@ -306,13 +336,11 @@ export const markNotificationsAsRead = mutation({
           .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
           .first();
 
-        if (!user || user._id !== args.userId) {
-           throw new Error("Unauthorized");
-        }
+        if (!user) throw new Error("User not found");
 
        const unread = await ctx.db
          .query("notifications")
-         .withIndex("by_recipient_unread", (q) => q.eq("recipientId", args.userId).eq("read", false))
+         .withIndex("by_recipient_unread", (q) => q.eq("recipientId", user._id).eq("read", false))
          .collect();
        
        // Mark everything EXCEPT messages as read.

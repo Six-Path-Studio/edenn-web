@@ -74,7 +74,7 @@ const FollowButton = ({ targetId }: { targetId?: string }) => {
     if (!targetId) return;
     
     try {
-        await toggleFollow({ followerId: user.id as any, followingId: targetId as any });
+        await toggleFollow({ followingId: targetId as any });
     } catch (err) {
         console.error("Follow error:", err);
     }
