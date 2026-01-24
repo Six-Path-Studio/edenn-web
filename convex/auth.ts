@@ -19,21 +19,29 @@ export const storeUser = mutation({
 
     if (existingUser) {
       // Update existing user
+      const tokenIdentifier = args.provider === "google" 
+        ? `https://accounts.google.com|${args.providerId}` 
+        : `${args.provider}|${args.providerId}`;
+
       await ctx.db.patch(existingUser._id, {
         name: args.name,
         avatar: args.avatar,
-        tokenIdentifier: `${args.provider}|${args.providerId}`,
+        tokenIdentifier,
       });
       return existingUser._id;
     }
 
-    // Create new user
+    // Create new user with normalized tokenIdentifier
+    const tokenIdentifier = args.provider === "google" 
+      ? `https://accounts.google.com|${args.providerId}` 
+      : `${args.provider}|${args.providerId}`;
+
     return await ctx.db.insert("users", {
       email: args.email,
       name: args.name,
       avatar: args.avatar,
       role: "player", // Default role
-      tokenIdentifier: `${args.provider}|${args.providerId}`,
+      tokenIdentifier,
       createdAt: Date.now(),
     });
   },

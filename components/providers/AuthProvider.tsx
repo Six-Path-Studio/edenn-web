@@ -4,12 +4,14 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { convex } from "./ConvexClientProvider";
 
 interface User {
   id: Id<"users"> | string;
   email: string;
   name: string;
   avatar?: string;
+  token?: string;
 }
 
 interface AuthContextType {
@@ -62,7 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = localStorage.getItem("edenn_user");
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
+        if (parsedUser.token) {
+          convex.setAuth(parsedUser.token);
+        }
       } catch {
         localStorage.removeItem("edenn_user");
       }
@@ -90,7 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: payload.email,
         name: payload.name,
         avatar: payload.picture,
+        token: response.credential,
       };
+
+      // Set auth in Convex client
+      convex.setAuth(response.credential);
 
       setUser(newUser);
       localStorage.setItem("edenn_user", JSON.stringify(newUser));
@@ -101,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = () => {
     setUser(null);
+    convex.setAuth(undefined as any);
     // Clear all auth-related localStorage
     localStorage.removeItem("edenn_user");
     localStorage.removeItem("edenn_onboarding_completed");

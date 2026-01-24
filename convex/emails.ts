@@ -36,14 +36,14 @@ const baseEmailTemplate = (content: string) => `
     <div class="content-wrapper">
       <div class="header">
         <!-- Using text logo as reliable fallback, but aiming for visuals -->
-        <a href="https://edenn.vercel.app" class="logo-text">edenn.</a>
+        <a href="${process.env.NEXT_PUBLIC_URL || 'https://edenn.io'}" class="logo-text">edenn.</a>
       </div>
       <div class="card">
         ${content}
       </div>
       <div class="footer">
         <p>&copy; ${new Date().getFullYear()} Edenn. All rights reserved.<br>
-        <a href="https://edenn.vercel.app/settings">Unsubscribe</a> from these notifications.</p>
+        <a href="${process.env.NEXT_PUBLIC_URL || 'https://edenn.io'}/settings">Unsubscribe</a> from these notifications.</p>
       </div>
     </div>
   </div>
@@ -53,7 +53,7 @@ const baseEmailTemplate = (content: string) => `
 
 const generateEmailHtml = (type: string, data: any) => {
     let content = "";
-    const baseUrl = "https://edenn.vercel.app";
+    const baseUrl = process.env.NEXT_PUBLIC_URL || "https://edenn.io";
     
     switch (type) {
         case "welcome":
