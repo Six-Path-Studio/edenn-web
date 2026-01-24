@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const parsedUser: User = JSON.parse(storedUser);
         setUser(parsedUser);
         if (parsedUser.token) {
-          convex.setAuth(parsedUser.token);
+          convex.setAuth(() => parsedUser.token!);
         }
       } catch {
         localStorage.removeItem("edenn_user");
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       // Set auth in Convex client
-      convex.setAuth(response.credential);
+      convex.setAuth(() => response.credential);
 
       setUser(newUser);
       localStorage.setItem("edenn_user", JSON.stringify(newUser));
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = () => {
     setUser(null);
-    convex.setAuth(undefined as any);
+    convex.clearAuth();
     // Clear all auth-related localStorage
     localStorage.removeItem("edenn_user");
     localStorage.removeItem("edenn_onboarding_completed");
