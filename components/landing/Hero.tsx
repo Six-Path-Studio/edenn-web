@@ -68,7 +68,7 @@ export default function Hero() {
   ];
 
   return (
-    <section className="relative min-h-screen flex flex-col pt-24 sm:pt-28 lg:pt-52 pb-10 sm:pb-16 lg:pb-20">
+    <section className="relative min-h-screen flex flex-col pt-40 sm:pt-28 lg:pt-52 pb-10 sm:pb-16 lg:pb-20">
       <Container className="flex-1 flex flex-col">
         {/* Text Content */}
         <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4 lg:space-y-6 mx-auto z-10">
@@ -85,7 +85,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-            className="text-text-secondary text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed px-4"
+            className="text-text-secondary text-sm sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed px-4"
           >
             The premier platform for creative technologists to be seen. Build your dynamic profile, get discovered, and work with world-class studios.          </motion.p>
 
@@ -99,7 +99,7 @@ export default function Hero() {
             <input
               type="text"
               placeholder="Search"
-              className="w-full bg-[#121212] border border-input-border rounded-xl lg:rounded-2xl py-3 lg:py-4 px-6 text-white placeholder:text-text-secondary focus:border-white/20 transition-colors outline-none text-base lg:text-lg"
+              className="w-full bg-[#121212] border border-input-border rounded-xl lg:rounded-2xl py-3 lg:py-4 px-6 text-white placeholder:text-text-secondary focus:border-white/20 transition-colors outline-none text-sm lg:text-lg"
             />
             <div className="absolute inset-y-0 right-6 sm:right-6 lg:right-6 flex items-center pointer-events-none group-focus-within:text-white">
               <Search className="w-4 h-4 lg:w-5 lg:h-5 text-text-secondary transition-colors group-focus-within:text-white" />

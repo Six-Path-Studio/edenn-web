@@ -60,7 +60,7 @@ interface ArticleItemProps {
 const FollowButton = ({ targetId }: { targetId?: string }) => {
   const { user, isAuthenticated } = useAuth();
   const toggleFollow = useMutation(api.users.toggleFollow);
-  
+
   // Conditionally fetch isFollowing only if we have user and targetId
   const isFollowing = useQuery(api.users.isFollowing, (user && targetId) ? { followerId: user.id as any, followingId: targetId as any } : "skip");
 
@@ -68,22 +68,22 @@ const FollowButton = ({ targetId }: { targetId?: string }) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated || !user) {
-        alert("Please login to follow.");
-        return;
+      alert("Please login to follow.");
+      return;
     }
     if (!targetId) return;
-    
+
     try {
-        await toggleFollow({ followingId: targetId as any });
+      await toggleFollow({ followingId: targetId as any });
     } catch (err) {
-        console.error("Follow error:", err);
+      console.error("Follow error:", err);
     }
   };
 
   if (!targetId) return null;
 
   return (
-    <button 
+    <button
       onClick={handleToggle}
       className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all z-20 relative ${isFollowing ? 'bg-primary border-primary text-white' : 'border-[#7628DB] text-[#7628DB] hover:bg-[#7628DB] hover:text-white'}`}
     >
@@ -95,18 +95,18 @@ const FollowButton = ({ targetId }: { targetId?: string }) => {
 const FeaturedItem = ({ id, studioId, title, studio, imageSrc, avatarSrc, description, stats }: FeaturedItemProps) => {
   return (
     <Link href={`/games/${id}`}>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-50px" }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col gap-3 cursor-pointer"
+        className="flex flex-col gap-1 cursor-pointer"
       >
         {/* Game Card */}
         <div className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-primary/50 transition-colors duration-300">
           <div className="flex-1 w-full relative rounded-[20px] overflow-hidden">
-            <Image 
-              src={imageSrc} 
+            <Image
+              src={imageSrc}
               alt={title}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -115,20 +115,20 @@ const FeaturedItem = ({ id, studioId, title, studio, imageSrc, avatarSrc, descri
           <div className="h-[57px] px-2 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full relative overflow-hidden shrink-0 border border-[#262626] bg-black">
-                 <Image src={avatarSrc} alt={studio} fill className="object-cover" />
+                <Image src={avatarSrc} alt={studio} fill className="object-cover" />
               </div>
-          <div className="flex flex-col justify-center">
+              <div className="flex flex-col justify-center">
                 {/* Title - Mulish, 900, 17px */}
                 <h3 className="text-white font-mulish font-black text-[17px] leading-none mb-1">{title}</h3>
                 <span className="text-[#727272] text-[11px] font-medium leading-none">@{studio}</span>
               </div>
             </div>
-            
+
             <FollowButton targetId={studioId} />
 
           </div>
         </div>
-        
+
         {/* Description Card */}
         <div className="rounded-[20px] border-[1.5px] border-[#262626] bg-[#0B0B0B] py-[26px] px-[22px] flex flex-col gap-4">
           <span className="self-start h-[43px] flex items-center bg-[#1A1A1A] text-[#9CA3AF] text-xs px-4 rounded-[35px] border border-[#262626]">
@@ -161,21 +161,21 @@ const FeaturedItem = ({ id, studioId, title, studio, imageSrc, avatarSrc, descri
 
 const StudioItem = ({ id, type, name, handle, logoSrc, avatarSrc, description, stats }: StudioItemProps) => {
   const href = type === "studio" ? `/studio/${id}` : `/creators/${id}`;
-  
+
   return (
     <Link href={href}>
-      <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5 }}
-      className="flex flex-col gap-3 cursor-pointer"
-    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col gap-3 cursor-pointer"
+      >
         {/* Studio Card with Logo */}
         <div className="group relative h-[302px] rounded-[31px] border border-[#262626] bg-[#0B0B0B] p-3 flex flex-col hover:border-primary/50 transition-colors duration-300">
           <div className="flex-1 w-full relative rounded-[20px] overflow-hidden bg-white flex items-center justify-center">
-            <Image 
-              src={logoSrc} 
+            <Image
+              src={logoSrc}
               alt={name}
               width={200}
               height={120}
@@ -185,7 +185,7 @@ const StudioItem = ({ id, type, name, handle, logoSrc, avatarSrc, description, s
           <div className="h-[57px] px-2 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full relative overflow-hidden shrink-0 border border-[#262626] bg-black">
-                 <Image src={avatarSrc} alt={name} fill className="object-cover" />
+                <Image src={avatarSrc} alt={name} fill className="object-cover" />
               </div>
               <div className="flex flex-col justify-center">
                 {/* Title - Mulish, 900, 17px */}
@@ -193,7 +193,7 @@ const StudioItem = ({ id, type, name, handle, logoSrc, avatarSrc, description, s
                 <span className="text-[#727272] text-[11px] font-medium leading-none">@{handle}</span>
               </div>
             </div>
-            
+
             <FollowButton targetId={id} />
 
           </div>
@@ -241,19 +241,19 @@ const ArticleItem = ({ title, author, date, stats }: ArticleItemProps) => {
 };
 
 const articleItems: ArticleItemProps[] = [
-  { 
+  {
     title: "Africa’s game studios are quietly building global products the world is just beginning to notice",
     author: "by: Chidi Light",
     date: "2:16 PM UTC • July 20, 2023",
     stats: { posts: 2, reviews: 141, upvotes: 174 }
   },
-  { 
+  {
     title: "How creative tech communities in emerging regions are redefining access, and opportunity",
     author: "by: Chidi Light",
     date: "2:16 PM UTC • July 20, 2023",
     stats: { posts: 2, reviews: 141, upvotes: 174 }
   },
-  { 
+  {
     title: "Why the next wave of impactful game studios may come from overlooked ecosystems",
     author: "by: Chidi Light",
     date: "2:16 PM UTC • July 20, 2023",
@@ -271,21 +271,21 @@ export default function FeaturedSection() {
       <Container>
         {/* Header */}
         <div className="text-center mb-16 space-y-4">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-white text-5xl font-power font-normal leading-tight mx-auto max-w-2xl px-4"
+            className="text-white text-[32px] sm:text-[42px] md:text-[52px] lg:text-[63.6px] font-power font-normal leading-tight mx-auto max-w-2xl px-4"
           >
             Organisation spotlight: <br /> Studio/Organisation of the Week
           </motion.h2>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-[#9CA3AF] text-base font-preahvihear"
+            className="text-[#9CA3AF] text-sm  lg:text-base font-preahvihear"
           >
             Discover brands and studios shaping the future of the creative tech industry
           </motion.p>
@@ -293,122 +293,122 @@ export default function FeaturedSection() {
 
         {/* Video Games Container */}
         {featuredGames.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="bg-[#121212] rounded-[48px] p-8 md:p-10 relative border border-[#1F1F1F]"
-        >
-          {/* Video Games Tag */}
-          <div className="mb-8">
-            <span className="bg-[#DDC984] text-black font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
-              Video Games
-            </span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="bg-[#121212] rounded-[48px] p-4 md:p-10 relative border border-[#1F1F1F]"
+          >
+            {/* Video Games Tag */}
+            <div className="mb-8 lg:text-left text-center">
+              <span className="bg-[#DDC984] text-black font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
+                Video Games
+              </span>
+            </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredGames.map((game, idx) => (
-              <FeaturedItem 
-                key={idx} 
-                id={game._id}
-                studioId={game.studioId}
-                title={game.title}
-                studio={game.studio?.name || "Indie"}
-                imageSrc={game.coverImage || "/images/unbroken_art.png"}
-                avatarSrc={game.studio?.avatar || "/images/avatar.png"}
-                description={game.description || "No description available."}
-                stats={{ 
-                  posts: 0, 
-                  reviews: 0, 
-                  upvotes: game.upvotes || 0 
-                }} 
-              />
-            ))}
-          </div>
-        </motion.div>
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredGames.map((game, idx) => (
+                <FeaturedItem
+                  key={idx}
+                  id={game._id}
+                  studioId={game.studioId}
+                  title={game.title}
+                  studio={game.studio?.name || "Indie"}
+                  imageSrc={game.coverImage || "/images/unbroken_art.png"}
+                  avatarSrc={game.studio?.avatar || "/images/avatar.png"}
+                  description={game.description || "No description available."}
+                  stats={{
+                    posts: 0,
+                    reviews: 0,
+                    upvotes: game.upvotes || 0
+                  }}
+                />
+              ))}
+            </div>
+          </motion.div>
         )}
 
         {/* Studios Container */}
         {featuredStudios.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="bg-[#121212] rounded-[48px] p-8 md:p-10 relative border border-[#1F1F1F] mt-8"
-        >
-          {/* Studios Tag */}
-          <div className="mb-8">
-            <span className="bg-[#D3745E] text-white font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
-              Studios
-            </span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="bg-[#121212] rounded-[48px] p-4 md:p-10 relative border border-[#1F1F1F] mt-8"
+          >
+            {/* Studios Tag */}
+            <div className="mb-8 lg:text-left text-center">
+              <span className="bg-[#D3745E] text-white font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
+                Studios
+              </span>
+            </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {featuredStudios.map((studio, idx) => (
-            <StudioItem 
-              key={idx}
-              id={studio._id}
-              type="studio"
-              name={studio.name || "Studio"}
-              handle={(studio.name || "").toLowerCase().replace(/\s+/g, '')}
-              logoSrc={studio.coverImage || "/images/Hammer Games.png"}
-              avatarSrc={studio.avatar || "/images/Hammer Games.png"}
-              description={studio.bio || "No bio available."}
-              stats={{ posts: 0, reviews: 0, upvotes: 0 }}
-            />
-          ))}
-        </div>
-        </motion.div>
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredStudios.map((studio, idx) => (
+                <StudioItem
+                  key={idx}
+                  id={studio._id}
+                  type="studio"
+                  name={studio.name || "Studio"}
+                  handle={(studio.name || "").toLowerCase().replace(/\s+/g, '')}
+                  logoSrc={studio.coverImage || "/images/Hammer Games.png"}
+                  avatarSrc={studio.avatar || "/images/Hammer Games.png"}
+                  description={studio.bio || "No bio available."}
+                  stats={{ posts: 0, reviews: 0, upvotes: 0 }}
+                />
+              ))}
+            </div>
+          </motion.div>
         )}
 
         {/* Creators Container */}
         {featuredCreators.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="bg-[#121212] rounded-[48px] p-8 md:p-10 relative border border-[#1F1F1F] mt-8"
-        >
-          {/* Creators Tag */}
-          <div className="mb-8">
-            <span className="bg-[#DDC984] text-black font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
-              Creators
-            </span>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="bg-[#121212] rounded-[48px] p-4 md:p-10 relative border border-[#1F1F1F] mt-8"
+          >
+            {/* Creators Tag */}
+            <div className="mb-8 lg:text-left text-center">
+              <span className="bg-[#DDC984] text-black font-dm-sans font-medium w-[158px] h-[43px] px-[4px] rounded-[11px] text-[16px] leading-none tracking-[-1px] inline-flex items-center justify-center">
+                Creators
+              </span>
+            </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredCreators.map((creator, idx) => (
-              <StudioItem 
-                key={idx}
-                id={creator._id}
-                type="creator"
-                name={creator.name || "Creator"}
-                handle={(creator.name || "").toLowerCase().replace(/\s+/g, '')}
-                logoSrc={creator.coverImage || "/images/Hammer Games.png"}
-                avatarSrc={creator.avatar || "/images/Hammer Games.png"}
-                description={creator.bio || "No bio available."}
-                stats={{ posts: 0, reviews: 0, upvotes: 0 }}
-              />
-            ))}
-          </div>
-        </motion.div>
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredCreators.map((creator, idx) => (
+                <StudioItem
+                  key={idx}
+                  id={creator._id}
+                  type="creator"
+                  name={creator.name || "Creator"}
+                  handle={(creator.name || "").toLowerCase().replace(/\s+/g, '')}
+                  logoSrc={creator.coverImage || "/images/Hammer Games.png"}
+                  avatarSrc={creator.avatar || "/images/Hammer Games.png"}
+                  description={creator.bio || "No bio available."}
+                  stats={{ posts: 0, reviews: 0, upvotes: 0 }}
+                />
+              ))}
+            </div>
+          </motion.div>
         )}
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="bg-[#171717] rounded-[48px] p-8 md:p-10 relative border border-[#262626] mt-12"
+          className="bg-[#171717] rounded-[48px] p-4 md:p-10 relative border border-[#262626] mt-12"
         >
           {/* Top Reads Tag - DM Sans, 500, 16px, letter-spacing -1px */}
-          <div className="mb-10">
+          <div className="mb-8 lg:text-left text-center">
             <button className="bg-[#5E7BD3] text-white font-dm-sans font-medium h-[43px] px-8 rounded-[11px] text-[16px] leading-none tracking-tight inline-flex items-center justify-center shadow-[0_0_20px_rgba(94,123,211,0.3)]">
               Top Reads
             </button>
