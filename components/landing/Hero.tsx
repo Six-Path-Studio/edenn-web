@@ -14,7 +14,7 @@ interface GameCardProps {
 
 const GameCard = ({ title, studio, imageSrc, avatarSrc }: GameCardProps) => {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -23,8 +23,8 @@ const GameCard = ({ title, studio, imageSrc, avatarSrc }: GameCardProps) => {
     >
       {/* Image Area */}
       <div className="flex-1 w-full relative rounded-[16px] lg:rounded-[20px] overflow-hidden">
-        <Image 
-          src={imageSrc} 
+        <Image
+          src={imageSrc}
           alt={title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -37,14 +37,14 @@ const GameCard = ({ title, studio, imageSrc, avatarSrc }: GameCardProps) => {
         <div className="flex items-center gap-2 lg:gap-3">
           {/* Avatar */}
           <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full relative overflow-hidden flex items-center justify-center shrink-0 border border-[#262626]">
-             <Image 
-               src={avatarSrc} 
-               alt={studio} 
-               fill 
-               className="object-cover"
-             />
+            <Image
+              src={avatarSrc}
+              alt={studio}
+              fill
+              className="object-cover"
+            />
           </div>
-          
+
           <div className="flex flex-col justify-center">
             <h3 className="text-white font-mulish font-black text-[14px] lg:text-[17px] leading-none mb-0.5 lg:mb-1">{title}</h3>
             <span className="text-[#727272] text-[10px] lg:text-[11px] font-medium leading-none">@{studio}</span>
@@ -68,38 +68,36 @@ export default function Hero() {
   ];
 
   return (
-    <section className="relative min-h-screen flex flex-col pt-24 sm:pt-28 lg:pt-32 pb-10 sm:pb-16 lg:pb-20">
+    <section className="relative min-h-screen flex flex-col pt-24 sm:pt-28 lg:pt-52 pb-10 sm:pb-16 lg:pb-20">
       <Container className="flex-1 flex flex-col">
         {/* Text Content */}
         <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4 lg:space-y-6 mx-auto z-10">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="font-power font-normal text-[#FFFFFF] text-[32px] sm:text-[42px] md:text-[52px] lg:text-[63.6px] leading-[100%] tracking-[0%] text-center max-w-[811px]"
           >
-            Discover Game Studios, <br />
-            Creators & Talent
+            Discover Talents, Creatives, <br /> Techies & Studios
           </motion.h1>
 
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
             className="text-text-secondary text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed px-4"
           >
-            Connect with world-class game development studios, indie creators, and gaming professionals.
-          </motion.p>
+            The premier platform for creative technologists to be seen. Build your dynamic profile, get discovered, and work with world-class studios.          </motion.p>
 
           {/* Main Search Bar */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
             className="w-full max-w-md lg:max-w-2xl mt-4 lg:mt-6 relative group px-4 sm:px-0"
           >
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search"
               className="w-full bg-[#121212] border border-input-border rounded-xl lg:rounded-2xl py-3 lg:py-4 px-6 text-white placeholder:text-text-secondary focus:border-white/20 transition-colors outline-none text-base lg:text-lg"
             />

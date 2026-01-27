@@ -170,10 +170,10 @@ export default function GameProfilePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full bg-linear-to-r from-[#7628db] to-[#40A261] rounded-[32px] p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8"
+          className="w-full bg-linear-to-r from-[#5F26A7] to-[#187236] rounded-[16px] p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8"
         >
           <div>
-            <h1 className="text-4xl md:text-5xl font-preahvihear text-white mb-2">{game.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-power text-white mb-2">{game.title}</h1>
             <p className="text-white/60 font-dm-sans">{game.tagline || "No tagline"}</p>
           </div>
           <motion.button
@@ -206,7 +206,7 @@ export default function GameProfilePage() {
 
             {/* Featured Section / Snapshots or Trailer */}
             <div className="bg-[#111] border border-white/5 rounded-[32px] p-8">
-              <h2 className="text-2xl font-preahvihear text-white text-center mb-6">Featured</h2>
+              <h2 className="text-2xl font-power text-white text-center mb-6">Featured</h2>
               
               <div className="w-full aspect-video rounded-[24px] overflow-hidden bg-black relative group">
                   <FeaturedCarousel game={game} />
@@ -220,7 +220,7 @@ export default function GameProfilePage() {
             <div className="bg-[#111] border border-white/5 rounded-[32px] p-6">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-6 h-6 rounded bg-linear-to-br from-[#7628db] to-[#40A261]" />
-                <h3 className="text-lg font-dm-sans font-semibold text-white">About Game</h3>
+                <h3 className="text-lg font-power font-semibold text-white">About Game</h3>
               </div>
 
               <div className="space-y-4">
@@ -255,7 +255,7 @@ export default function GameProfilePage() {
             <div className="bg-[#111] border border-white/5 rounded-[32px] p-6">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-6 h-6 rounded bg-linear-to-br from-[#7628db] to-[#40A261]" />
-                <h3 className="text-lg font-dm-sans font-semibold text-white">Social Links</h3>
+                <h3 className="text-lg font-power font-semibold text-white">Social Links</h3>
               </div>
 
               <div className="space-y-4">

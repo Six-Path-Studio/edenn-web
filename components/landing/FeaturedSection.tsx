@@ -287,7 +287,7 @@ export default function FeaturedSection() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-[#9CA3AF] text-base font-preahvihear"
           >
-            Discover studios shaping the future of the creative tech industry
+            Discover brands and studios shaping the future of the creative tech industry
           </motion.p>
         </div>
 
