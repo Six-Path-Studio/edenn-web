@@ -31,7 +31,7 @@ const powerGrotesk = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Eden",
+  title: "Edenn",
   description: "Connect with world-class game development studios, indie creators, and gaming professionals. Find services, hire talent, or showcase your portfolio.",
 };
 
