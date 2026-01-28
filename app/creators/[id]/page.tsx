@@ -191,10 +191,10 @@ export default function CreatorPublicProfilePage() {
                         <div className="flex-1 w-full lg:w-auto flex flex-col sm:flex-row items-end sm:items-end justify-between gap-6 pb-2">
                             {/* Name & Desc */}
                             <div className="flex flex-col gap-1 w-full sm:w-auto">
-                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-power font-bold text-[#A855F7] tracking-tight">
+                                <h1 className="text-2xl sm:text-4xl md:text-5xl font-power font-bold text-[#A855F7] tracking-tight">
                                     {profileUser.name}
                                 </h1>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-52">
+                                <div className="grid grid-cols-2 gap-2 w-52">
                                     <p className="text-white/60 text-sm sm:text-base font-light capitalize">
                                         {profileUser.role || 'Creator'}
                                     </p>
@@ -205,7 +205,7 @@ export default function CreatorPublicProfilePage() {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex flex-wrap items-center lg:gap-4 gap-2">
                                 {/* Upvote */}
                                 <div className="flex flex-col items-center gap-1 group cursor-pointer" onClick={handleUpvoteClick}>
                                     <button className={`w-12 h-12 flex items-center justify-center rounded-2xl border border-white/5 transition-colors ${isUpvoted ? 'bg-[#7628DB] text-white' : 'bg-[#1A1A1A] text-white group-hover:bg-[#252525]'}`}>
@@ -268,10 +268,10 @@ export default function CreatorPublicProfilePage() {
                 </div>
 
                 {/* TOP CONTENT GRID (Featured + Info) */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 mb-16 mt-16">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 mb-16 lg:mt-16">
 
                     {/* LEFT COLUMN: FEATURED */}
-                    <div className="flex flex-col gap-8">
+                    <div className="flex flex-col lg:gap-8 gap-4">
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-power text-white">Featured</h2>
                         </div>
@@ -316,7 +316,7 @@ export default function CreatorPublicProfilePage() {
                     {/* RIGHT COLUMN: ABOUT & SOCIALS */}
                     <div className="flex flex-col gap-6">
 
-                        <h2 className="text-lg font-power font-medium text-white/50 flex items-center gap-2">
+                        <h2 className="text-lg font-power font-medium text-white flex items-center gap-2">
                             <Image src="/images/Mask group.png" width={20} height={20} alt="icon" className="opacity-70" />
                             About {isStudio ? 'Studio' : 'Creator'}
                         </h2>

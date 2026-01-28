@@ -60,7 +60,7 @@ export default function StudiosPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white pt-32">
+    <main className="min-h-screen bg-background text-white pt-32">
 
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 lg:pt-12 pb-24">
         <DirectoryHeader

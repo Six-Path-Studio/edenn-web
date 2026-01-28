@@ -71,7 +71,7 @@ export default function CreatorsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white text-balance pt-32">
+    <main className="min-h-screen bg-background text-white text-balance pt-32">
 
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         {/* Header */}

@@ -194,7 +194,7 @@ export default function StudioProfilePage() {
                                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#A855F7] tracking-tight font-power">
                                     {profileUser.name}
                                 </h1>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-52">
+                                <div className="grid grid-cols-2 gap-2 w-52">
                                     <p className="text-white/60 text-sm sm:text-base font-light capitalize">
                                         {profileUser.role || 'Studio'}
                                     </p>
